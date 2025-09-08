@@ -136,6 +136,4 @@ const main = async () => {
   return;
 };
 
-Deno.cron('vl-word-bot', '0 * * * *', () => {
-  main();
-});
+main();
