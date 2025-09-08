@@ -4,7 +4,9 @@ import {
   fetchZpdicWord,
   WordWithExamples,
 } from './mod/zpdic-api.ts';
+
 import * as v from 'jsr:@valibot/valibot';
+
 import { authentication, createRecord } from './mod/bluesky-api.ts';
 
 const getRandomInt = (min: number, max: number) => {
@@ -21,7 +23,7 @@ const formatWord = (word: WordWithExamples) => {
       return `/${word.pronunciation}/`;
     }
   })();
-
+  
   const meaning = word.equivalents
     .map(
       ({ titles, names }, i) =>
@@ -51,13 +53,15 @@ ${_ety.text.replaceAll(/[_\\]/g, '')}`;
 
   const link = `https://zpdic.ziphil.com/dictionary/633?kind=exact&number=${word.number}`;
 
-  const formattedStr = `${entry} ${pronunciation}  ${tag}
+  const pre = `${entry} ${pronunciation}  ${tag}
 
 ${meaning}
 
 ${description}
 
 ${etymology}`;
+
+  const formattedStr = pre.replaceAll(/\n{3,}/g, '\n\n').replace(/\n+$/, '').trim();
 
   return {
     formattedStr,
