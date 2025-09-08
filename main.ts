@@ -74,7 +74,7 @@ const main = async () => {
 
   if (!identifier || !password || !zpdicApiKey || !dicID) {
     console.error('cannot get env');
-    return;
+    return -1;
   }
 
   const numRes = await getTotalWords(zpdicApiKey, dicID);
@@ -87,7 +87,7 @@ const main = async () => {
       console.error(err.name, err.message, err.cause);
     }
 
-    return;
+    return -1;
   }
 
   const wRes = await fetchZpdicWord(
@@ -105,7 +105,7 @@ const main = async () => {
       console.error(err.name, err.message, err.cause);
     }
 
-    return;
+    return -1;
   }
   const word = wRes.data;
 
@@ -118,7 +118,7 @@ const main = async () => {
   if (!session.success) {
     const { name, message, cause } = session.error;
     console.error(name, message, cause);
-    return;
+    return -1;
   }
 
   const { did, accessJwt } = session.data;
@@ -128,12 +128,12 @@ const main = async () => {
   if (!res.success) {
     const { name, message, cause } = res.error;
     console.error(name, message, cause);
-    return;
+    return -1;
   }
 
   console.log(`successfully posted.`);
 
-  return;
+  return 0;
 };
 
 main();
