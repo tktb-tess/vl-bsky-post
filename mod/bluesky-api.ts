@@ -68,20 +68,29 @@ export const authentication = async (
 };
 
 export const createRecord = async (
-  identifier: string,
+  did: string,
   accessJwt: string,
-  content: string
+  content: string,
+  link: string,
+  entry: string
 ): ResultAsync<null, Error> => {
   const url = 'https://bsky.social/xrpc/com.atproto.repo.createRecord';
 
   try {
     const payload = {
-      repo: identifier,
+      repo: did,
       collection: 'app.bsky.feed.post',
       record: {
-        $type: 'app.bsky.feed.post',
         text: content,
         createdAt: new Date().toISOString(),
+        embed: {
+          $type: 'app.bsky.embed.external',
+          external: {
+            uri: link,
+            title: 'Go to ZpDIC Online',
+            description: entry
+          }
+        }
       },
     };
 

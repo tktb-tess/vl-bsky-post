@@ -5,6 +5,7 @@ import {
   WordWithExamples,
 } from './mod/zpdic-api.ts';
 import * as v from '@valibot/valibot';
+import { authentication, createRecord } from './mod/bluesky-api.ts';
 
 const getRandomInt = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min) + min);
@@ -48,12 +49,17 @@ ${_ety.text.replaceAll(/[_\\]/g, '')}`;
 
   const tag = `${word.tags.map((t) => `[${t}]`).join(' ')}`;
 
-  const formattedStr = `
-${entry} ${pronunciation}  ${tag}
+  const link = `https://zpdic.ziphil.com/dictionary/633?kind=exact&number=${word.number}`;
+
+  const formattedStr = `${entry} ${pronunciation}  ${tag}
 ${meaning}
 ${description}
 ${etymology}`;
-  return formattedStr;
+  return {
+    formattedStr,
+    link,
+    entry,
+  };
 };
 
 const main = async () => {
@@ -72,33 +78,59 @@ const main = async () => {
   if (!numRes.success) {
     const err = numRes.error;
     if (err instanceof v.ValiError) {
-      console.log(err.name, err.issues);
+      console.error(err.name, err.issues);
     } else {
-      console.log(err.name, err.message, err.cause);
+      console.error(err.name, err.message, err.cause);
     }
-    
+
     return;
   }
 
-  const wRes = await fetchZpdicWord(zpdicApiKey, getRandomInt(0, numRes.data), dicID);
+  const wRes = await fetchZpdicWord(
+    zpdicApiKey,
+    getRandomInt(0, numRes.data),
+    dicID
+  );
 
   if (!wRes.success) {
     const err = wRes.error;
+
     if (err instanceof v.ValiError) {
-      console.log(err.name, err.issues);
+      console.error(err.name, err.issues);
     } else {
-      console.log(err.name, err.message, err.cause);
+      console.error(err.name, err.message, err.cause);
     }
 
     return;
   }
   const word = wRes.data;
 
-  const formatted = formatWord(word);
-  console.log(formatted);
+  const { formattedStr, link, entry } = formatWord(word);
+
+  console.log(formattedStr);
+
+  const session = await authentication(identifier, password);
+
+  if (!session.success) {
+    const { name, message, cause } = session.error;
+    console.error(name, message, cause);
+    return;
+  }
+
+  const { did, accessJwt } = session.data;
+
+  const res = await createRecord(did, accessJwt, formattedStr, link, entry);
+
+  if (!res.success) {
+    const { name, message, cause } = res.error;
+    console.error(name, message, cause);
+    return;
+  }
+
+  console.log(`successfully posted.`);
 
   return;
 };
 
-//Deno.cron('Vässenyländisķ word bot', '0 */2 * * *', () => main());
-main();
+Deno.cron('vl-word-bot', '0 */2 * * *', () => main());
+
