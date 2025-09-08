@@ -1,8 +1,8 @@
 name: Deploy
 on:
-  # push:
-    # branches:
-        # - main
+  push:
+    branches:
+      - main
 
   workflow_dispatch:
 
@@ -27,6 +27,6 @@ jobs:
       - name: Upload to Deno Deploy
         uses: denoland/deployctl@v1
         with:
-          project: ""
-          entrypoint: "main.ts"
-          root: "."
+          project: tktb-tess-vl-bsky-post
+          entrypoint: main.ts
+          root: '.'
