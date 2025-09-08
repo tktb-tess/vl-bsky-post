@@ -1,4 +1,4 @@
-import * as v from 'jsr:@valibot/valibot';
+import * as v from '@valibot/valibot';
 import { ResultAsync } from './types.ts';
 
 const __brand_object_id = Symbol('object-id');
@@ -95,9 +95,10 @@ export type ZpDICWordsResponse = v.InferOutput<typeof zpdicResponseSchema>;
 
 export const fetchZpdicWords = async (
   apiKey: string,
-  query: string
+  query: string,
+  dicID: string
 ): ResultAsync<ZpDICWordsResponse> => {
-  const url = 'https://zpdic.ziphil.com/api/v0/dictionary/633/words';
+  const url = `https://zpdic.ziphil.com/api/v0/dictionary/${dicID}/words`;
 
   try {
     const resp = await fetch(url + query, {
@@ -157,8 +158,8 @@ export const fetchZpdicWords = async (
   }
 };
 
-export const getTotalWords = async (apiKey: string): ResultAsync<number> => {
-  const result = await fetchZpdicWords(apiKey, '?text=');
+export const getTotalWords = async (apiKey: string, dicID: string): ResultAsync<number> => {
+  const result = await fetchZpdicWords(apiKey, '?text=', dicID);
   if (!result.success) {
     return result;
   }
@@ -171,9 +172,10 @@ export const getTotalWords = async (apiKey: string): ResultAsync<number> => {
 
 export const fetchZpdicWord = async (
   apiKey: string,
-  index: number
+  index: number,
+  dicID: string
 ): ResultAsync<WordWithExamples> => {
-  const res = await fetchZpdicWords(apiKey, `?text=&skip=${index}&limit=1`);
+  const res = await fetchZpdicWords(apiKey, `?text=&skip=${index}&limit=1`, dicID);
 
   if (!res.success) {
     return res;
@@ -185,7 +187,7 @@ export const fetchZpdicWord = async (
     return {
       success: false,
       error: {
-        name: 'GetNoWord',
+        name: 'WordNotFound',
       },
     };
   }

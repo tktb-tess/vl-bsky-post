@@ -1,6 +1,10 @@
 {
   "tasks": {
     "dev": "deno run --watch main.ts",
-    "start": "deno run --allow-read --allow-env --allow-net main.ts"
+    "start": "deno run --allow-read --allow-write --allow-env --allow-net main.ts"
+  },
+  "imports": {
+    "@std/dotenv": "jsr:@std/dotenv@^0.225.5",
+    "@valibot/valibot": "jsr:@valibot/valibot@^1.1.0"
   }
 }

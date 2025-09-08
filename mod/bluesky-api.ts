@@ -1,5 +1,5 @@
 import type { ResultAsync } from './types.ts';
-import * as v from 'jsr:@valibot/valibot';
+import * as v from '@valibot/valibot';
 
 export const sessionSchema = v.object({
   accessJwt: v.string(),
@@ -68,6 +68,63 @@ export const authentication = async (
         success: false,
         error: {
           name: 'UnidentifiedError',
+        },
+      };
+    }
+  }
+};
+
+export const createRecord = async (
+  identifier: string,
+  accessJwt: string,
+  content: string
+): ResultAsync<null> => {
+  const url = 'https://bsky.social/xrpc/com.atproto.repo.createRecord';
+
+  try {
+    const payload = {
+      repo: identifier,
+      collection: 'app.bsky.feed.post',
+      record: {
+        $type: 'app.bsky.feed.post',
+        text: content,
+        createdAt: new Date().toISOString(),
+      },
+    };
+
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessJwt}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!resp.ok) {
+      throw Error(`failed to fetch: ${resp.status} ${resp.statusText}`);
+    }
+
+    return {
+      success: true,
+      data: null,
+    };
+  } catch (e) {
+    if (e instanceof Error) {
+      const { name, message } = e;
+      return {
+        success: false,
+        error: {
+          name,
+          message,
+        },
+      };
+    } else {
+      return {
+        success: false,
+        error: {
+          name: 'UnidentifiedError',
+          cause: e,
         },
       };
     }

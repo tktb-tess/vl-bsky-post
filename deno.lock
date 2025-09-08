@@ -2,7 +2,9 @@
   "version": "5",
   "specifiers": {
     "jsr:@std/dotenv@*": "0.225.5",
+    "jsr:@std/dotenv@~0.225.5": "0.225.5",
     "jsr:@valibot/valibot@*": "1.1.0",
+    "jsr:@valibot/valibot@^1.1.0": "1.1.0",
     "npm:@atproto/api@*": "0.16.7"
   },
   "jsr": {
@@ -81,5 +83,11 @@
     "zod@3.25.76": {
       "integrity": "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="
     }
+  },
+  "workspace": {
+    "dependencies": [
+      "jsr:@std/dotenv@~0.225.5",
+      "jsr:@valibot/valibot@^1.1.0"
+    ]
   }
 }
