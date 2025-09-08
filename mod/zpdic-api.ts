@@ -93,11 +93,13 @@ export type ZpDICWordResponse = v.InferOutput<typeof zpdicWordResponseSchema>;
 
 export type ZpDICWordsResponse = v.InferOutput<typeof zpdicResponseSchema>;
 
+type VError = Error | v.ValiError<typeof zpdicResponseSchema>
+
 export const fetchZpdicWords = async (
   apiKey: string,
   query: string,
   dicID: string
-): ResultAsync<ZpDICWordsResponse> => {
+): ResultAsync<ZpDICWordsResponse, VError> => {
   const url = `https://zpdic.ziphil.com/api/v0/dictionary/${dicID}/words`;
 
   try {
@@ -109,56 +111,42 @@ export const fetchZpdicWords = async (
     });
 
     if (!resp.ok) {
-      return {
-        success: false,
-        error: {
-          name: 'FetchError',
-          message: `${resp.status} ${resp.statusText}`,
-        },
-      };
+      throw Error(`failed to fetch: ${resp.status} ${resp.statusText}`);
     }
 
-    const parsed = v.parse(zpdicResponseSchema, await resp.json());
+    const result = v.safeParse(zpdicResponseSchema, await resp.json());
+
+    if (!result.success) {
+      
+      return {
+        success: false,
+        error: new v.ValiError(result.issues),
+      }
+    }
 
     return {
       success: true,
-      data: parsed,
+      data: result.output,
     };
   } catch (e) {
-    if (e instanceof v.ValiError) {
-      const { name, message, issues } = e;
-
+    if (e instanceof Error) {
       return {
         success: false,
-        error: {
-          name,
-          message,
-          cause: v.flatten(issues),
-        },
-      };
-    } else if (e instanceof Error) {
-      const { name, message } = e;
-
-      return {
-        success: false,
-        error: {
-          name,
-          message,
-        },
+        error: e,
       };
     } else {
       return {
         success: false,
-        error: {
-          name: 'UnidentifiedError',
-          cause: e,
-        },
+        error: Error('unidentified error', { cause: e }),
       };
     }
   }
 };
 
-export const getTotalWords = async (apiKey: string, dicID: string): ResultAsync<number> => {
+export const getTotalWords = async (
+  apiKey: string,
+  dicID: string
+): ResultAsync<number, VError> => {
   const result = await fetchZpdicWords(apiKey, '?text=', dicID);
   if (!result.success) {
     return result;
@@ -174,8 +162,12 @@ export const fetchZpdicWord = async (
   apiKey: string,
   index: number,
   dicID: string
-): ResultAsync<WordWithExamples> => {
-  const res = await fetchZpdicWords(apiKey, `?text=&skip=${index}&limit=1`, dicID);
+): ResultAsync<WordWithExamples, VError> => {
+  const res = await fetchZpdicWords(
+    apiKey,
+    `?text=&skip=${index}&limit=1`,
+    dicID
+  );
 
   if (!res.success) {
     return res;
@@ -186,9 +178,7 @@ export const fetchZpdicWord = async (
   if (!word) {
     return {
       success: false,
-      error: {
-        name: 'WordNotFound',
-      },
+      error: Error('WordNotFound'),
     };
   }
 

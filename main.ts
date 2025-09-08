@@ -4,6 +4,7 @@ import {
   fetchZpdicWord,
   WordWithExamples,
 } from './mod/zpdic-api.ts';
+import * as v from '@valibot/valibot';
 
 const getRandomInt = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min) + min);
@@ -69,14 +70,26 @@ const main = async () => {
   const numRes = await getTotalWords(zpdicApiKey, dicID);
 
   if (!numRes.success) {
-    console.error(numRes.error);
+    const err = numRes.error;
+    if (err instanceof v.ValiError) {
+      console.log(err.name, err.issues);
+    } else {
+      console.log(err.name, err.message, err.cause);
+    }
+    
     return;
   }
 
   const wRes = await fetchZpdicWord(zpdicApiKey, getRandomInt(0, numRes.data), dicID);
 
   if (!wRes.success) {
-    console.error(wRes.error);
+    const err = wRes.error;
+    if (err instanceof v.ValiError) {
+      console.log(err.name, err.issues);
+    } else {
+      console.log(err.name, err.message, err.cause);
+    }
+
     return;
   }
   const word = wRes.data;

@@ -25,7 +25,7 @@ export type Session = v.InferInput<typeof sessionSchema>;
 export const authentication = async (
   identifier: string,
   password: string
-): ResultAsync<Session> => {
+): ResultAsync<Session, Error> => {
   const url = 'https://bsky.social/xrpc/com.atproto.server.createSession';
 
   const payload = {
@@ -54,21 +54,14 @@ export const authentication = async (
     };
   } catch (e) {
     if (e instanceof Error) {
-      const { name, message } = e;
-
       return {
         success: false,
-        error: {
-          name,
-          message,
-        },
+        error: e,
       };
     } else {
       return {
         success: false,
-        error: {
-          name: 'UnidentifiedError',
-        },
+        error: Error('unidentified error', { cause: e }),
       };
     }
   }
@@ -78,7 +71,7 @@ export const createRecord = async (
   identifier: string,
   accessJwt: string,
   content: string
-): ResultAsync<null> => {
+): ResultAsync<null, Error> => {
   const url = 'https://bsky.social/xrpc/com.atproto.repo.createRecord';
 
   try {
@@ -111,21 +104,14 @@ export const createRecord = async (
     };
   } catch (e) {
     if (e instanceof Error) {
-      const { name, message } = e;
       return {
         success: false,
-        error: {
-          name,
-          message,
-        },
+        error: e,
       };
     } else {
       return {
         success: false,
-        error: {
-          name: 'UnidentifiedError',
-          cause: e,
-        },
+        error: Error('unidentified error', { cause: e }),
       };
     }
   }
