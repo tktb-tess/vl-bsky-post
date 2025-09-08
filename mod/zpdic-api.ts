@@ -1,4 +1,4 @@
-import * as v from '@valibot/valibot';
+import * as v from 'jsr:@valibot/valibot';
 import { ResultAsync } from './types.ts';
 
 const __brand_object_id = Symbol('object-id');

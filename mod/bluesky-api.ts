@@ -1,5 +1,5 @@
 import type { ResultAsync } from './types.ts';
-import * as v from '@valibot/valibot';
+import * as v from 'jsr:@valibot/valibot';
 
 export const sessionSchema = v.object({
   accessJwt: v.string(),

@@ -1,10 +1,10 @@
-import '@std/dotenv/load';
+import 'jsr:@std/dotenv/load';
 import {
   getTotalWords,
   fetchZpdicWord,
   WordWithExamples,
 } from './mod/zpdic-api.ts';
-import * as v from '@valibot/valibot';
+import * as v from 'jsr:@valibot/valibot';
 import { authentication, createRecord } from './mod/bluesky-api.ts';
 
 const getRandomInt = (min: number, max: number) => {
@@ -34,7 +34,7 @@ const formatWord = (word: WordWithExamples) => {
   const description = (() => {
     const _desc = word.informations.find(({ title }) => title === '説明');
     if (!_desc || !_desc.text) return '';
-    const str = `\u276c${_desc.title}\u276d
+    const str = `〜${_desc.title}〜
 ${_desc.text.replaceAll(/[_\\]/g, '')}`;
     return str;
   })();
@@ -42,7 +42,7 @@ ${_desc.text.replaceAll(/[_\\]/g, '')}`;
   const etymology = (() => {
     const _ety = word.informations.find(({ title }) => title === '語源');
     if (!_ety || !_ety.text) return '';
-    const str = `\u276c${_ety.title}\u276d
+    const str = `〜${_ety.title}〜
 ${_ety.text.replaceAll(/[_\\]/g, '')}`;
     return str;
   })();
@@ -52,9 +52,13 @@ ${_ety.text.replaceAll(/[_\\]/g, '')}`;
   const link = `https://zpdic.ziphil.com/dictionary/633?kind=exact&number=${word.number}`;
 
   const formattedStr = `${entry} ${pronunciation}  ${tag}
+
 ${meaning}
+
 ${description}
+
 ${etymology}`;
+
   return {
     formattedStr,
     link,
@@ -132,5 +136,6 @@ const main = async () => {
   return;
 };
 
-Deno.cron('vl-word-bot', '0 */2 * * *', () => main());
-
+Deno.cron('vl-word-bot', '0 * * * *', () => {
+  main();
+});
