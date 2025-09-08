@@ -1,78 +1,38 @@
 import 'jsr:@std/dotenv/load';
-import * as v from 'jsr:@valibot/valibot';
-import { type ResultAsync, type Session, sessionSchema } from './mod/types.ts';
+import { getTotalWords, fetchZpdicWord } from './mod/zpdic-api.ts';
 
-const authentication = async (
-  root: string,
-  identifier: string,
-  password: string
-): ResultAsync<Session> => {
-  const url = new URL('/xrpc/com.atproto.server.createSession', root).href;
-
-  const payload = {
-    identifier,
-    password,
-  };
-
-  try {
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!resp.ok) {
-      throw Error(`failed to fetch: ${resp.status} ${resp.statusText}`);
-    }
-
-    const json: Session = v.parse(sessionSchema, await resp.json());
-
-    return {
-      success: true,
-      data: json,
-    };
-  } catch (e) {
-    if (e instanceof Error) {
-      const { name, message } = e;
-
-      return {
-        success: false,
-        error: {
-          name,
-          message,
-        },
-      };
-    } else {
-      console.error(e);
-      return {
-        success: false,
-        error: {
-          name: 'UnidentifiedError',
-        },
-      };
-    }
-  }
+const getRandomInt = (min: number, max: number) => {
+  return Math.floor(Math.random() * (max - min) + min);
 };
 
 const main = async () => {
   const identifier = Deno.env.get('BSKY_ID');
   const password = Deno.env.get('BSKY_PASSWORD');
-  const domain = 'https://bsky.social';
+  const zpdicApiKey = Deno.env.get('ZPDIC_API_KEY');
 
-  if (!identifier || !password) {
+  if (!identifier || !password || !zpdicApiKey) {
     console.error('cannot get env');
     return;
   }
 
-  const res = await authentication(domain, identifier, password);
+  const numRes = await getTotalWords(zpdicApiKey);
 
-  if (res.success) {
-    console.log(res.data);
-  } else {
-    console.error(res.error);
+  if (!numRes.success) {
+    console.error(numRes.error);
+    return;
   }
+
+  const wRes = await fetchZpdicWord(zpdicApiKey, getRandomInt(0, numRes.data));
+
+  if (!wRes.success) {
+    console.error(wRes.error);
+    return;
+  }
+
+  console.log(wRes.data);
+
+  return;
+
 };
 
 if (import.meta.main) {

@@ -1,4 +1,3 @@
-import * as v from 'jsr:@valibot/valibot';
 
 export type Result<T> =
   | {
@@ -10,14 +9,10 @@ export type Result<T> =
       error: {
         name: string;
         message?: string;
+        cause?: unknown;
       };
     };
 
 export type ResultAsync<T> = Promise<Result<T>>;
 
-export const sessionSchema = v.object({
-  accessJwt: v.string(),
-  refreshJwt: v.string(),
-});
 
-export type Session = v.InferInput<typeof sessionSchema>;
