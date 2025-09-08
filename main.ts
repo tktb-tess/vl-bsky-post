@@ -5,8 +5,6 @@ import {
   WordWithExamples,
 } from './mod/zpdic-api.ts';
 
-import * as v from 'jsr:@valibot/valibot';
-
 import { authentication, createRecord } from './mod/bluesky-api.ts';
 
 const getRandomInt = (min: number, max: number) => {
@@ -61,10 +59,10 @@ ${description}
 
 ${etymology}`;
 
-  const formattedStr = pre.replaceAll(/\n{3,}/g, '\n\n').replace(/\n+$/, '').trim();
+  const pre2 = pre.replaceAll(/\n{3,}/g, '\n\n').replace(/\n+$/, '').trim();
 
   return {
-    formattedStr,
+    formattedStr: pre2.length > 500 ? pre2.slice(0, 490) + '……' : pre2,
     link,
     entry,
   };
@@ -84,14 +82,7 @@ const main = async () => {
   const numRes = await getTotalWords(zpdicApiKey, dicID);
 
   if (!numRes.success) {
-    const err = numRes.error;
-    if (err instanceof v.ValiError) {
-      console.error(err.name, err.issues);
-    } else {
-      console.error(err.name, err.message, err.cause);
-    }
-
-    return -1;
+    throw numRes.error;
   }
 
   const wRes = await fetchZpdicWord(
@@ -101,15 +92,8 @@ const main = async () => {
   );
 
   if (!wRes.success) {
-    const err = wRes.error;
 
-    if (err instanceof v.ValiError) {
-      console.error(err.name, err.issues);
-    } else {
-      console.error(err.name, err.message, err.cause);
-    }
-
-    return -1;
+    throw wRes.error;
   }
   const word = wRes.data;
 
@@ -120,9 +104,7 @@ const main = async () => {
   const session = await authentication(identifier, password);
 
   if (!session.success) {
-    const { name, message, cause } = session.error;
-    console.error(name, message, cause);
-    return -1;
+    throw session.error;
   }
 
   const { did, accessJwt } = session.data;
@@ -130,9 +112,7 @@ const main = async () => {
   const res = await createRecord(did, accessJwt, formattedStr, link, entry);
 
   if (!res.success) {
-    const { name, message, cause } = res.error;
-    console.error(name, message, cause);
-    return -1;
+    throw res.error;
   }
 
   console.log(`successfully posted.`);
