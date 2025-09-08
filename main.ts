@@ -67,12 +67,12 @@ ${etymology}`;
 };
 
 const main = async () => {
-  const identifier = Deno.env.get('BSKY_ID');
+  const identifier = 'vaessenzlaendiskj.bsky.social';
   const password = Deno.env.get('BSKY_PASSWORD');
   const zpdicApiKey = Deno.env.get('ZPDIC_API_KEY');
-  const dicID = Deno.env.get('ZPDIC_VL_DIC_ID');
+  const dicID = '633';
 
-  if (!identifier || !password || !zpdicApiKey || !dicID) {
+  if (!password || !zpdicApiKey) {
     console.error('cannot get env');
     return -1;
   }

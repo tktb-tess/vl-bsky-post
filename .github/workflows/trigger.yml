@@ -24,4 +24,7 @@ jobs:
           deno-version: v2.x
 
       - name: Run
-        run: deno run --allow-read --allow-env --allow-net main.ts
+        env: 
+          BSKY_PASSWORD: ${{ secrets.BSKY_PASSWORD }}
+          ZPDIC_API_KEY: ${{ secrets.ZPDIC_API_KEY }}
+        run: BSKY_PASSWORD=$BSKY_PASSWORD ZPDIC_API_KEY=$ZPDIC_API_KEY deno run --allow-read --allow-net --allow-env main.ts
