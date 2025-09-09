@@ -51,6 +51,7 @@ export const safeParseToResult = <
   return ok(result.output);
 };
 
+
 export const fetchToResult = (
   url: string | URL,
   init?: RequestInit

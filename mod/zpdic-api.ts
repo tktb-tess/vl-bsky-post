@@ -99,13 +99,11 @@ export type ZpDICWordResponse = v.InferOutput<typeof zpdicWordResponseSchema>;
 
 export type ZpDICWordsResponse = v.InferOutput<typeof zpdicResponseSchema>;
 
-type VError = v.ValiError<typeof zpdicResponseSchema> | HttpError | MiscError;
-
 export const fetchZpdicWords = (
   apiKey: string,
   query: string,
   dicID: string
-): ResultAsync<ZpDICWordsResponse, VError> => {
+): ResultAsync<ZpDICWordsResponse, v.ValiError<typeof zpdicResponseSchema> | HttpError | MiscError> => {
   const url = `https://zpdic.ziphil.com/api/v0/dictionary/${dicID}/words`;
 
   const resp = fetchToResult(url + query, {
@@ -133,7 +131,7 @@ export const fetchZpdicWords = (
 export const getTotalWords = (
   apiKey: string,
   dicID: string
-): ResultAsync<number, VError> => {
+): ResultAsync<number, v.ValiError<typeof zpdicResponseSchema> | HttpError | MiscError> => {
   const result = fetchZpdicWords(apiKey, '?text=', dicID);
 
   return result.map(({ total }) => total);
@@ -143,7 +141,7 @@ export const fetchZpdicWord = (
   apiKey: string,
   index: number,
   dicID: string
-): ResultAsync<WordWithExamples, VError> => {
+): ResultAsync<WordWithExamples, v.ValiError<typeof zpdicResponseSchema> | HttpError | MiscError> => {
   const res = fetchZpdicWords(apiKey, `?text=&skip=${index}&limit=1`, dicID);
 
   return res.andThen(({ words }) => {

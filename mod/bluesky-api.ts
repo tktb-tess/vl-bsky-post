@@ -1,5 +1,11 @@
-import type { ResultAsync } from './types.ts';
+import { ResultAsync } from 'neverthrow';
 import * as v from '@valibot/valibot';
+import {
+  fetchToResult,
+  HttpError,
+  MiscError,
+  safeParseToResult,
+} from './util.ts';
 
 export const sessionSchema = v.object({
   accessJwt: v.string(),
@@ -22,10 +28,10 @@ export const sessionSchema = v.object({
 
 export type Session = v.InferOutput<typeof sessionSchema>;
 
-export const createSession = async (
+export const createSession = (
   identifier: string,
   password: string
-): ResultAsync<Session, Error> => {
+): ResultAsync<Session, MiscError | HttpError | v.ValiError<typeof sessionSchema>> => {
   const url = 'https://bsky.social/xrpc/com.atproto.server.createSession';
 
   const payload = {
@@ -33,95 +39,81 @@ export const createSession = async (
     password,
   };
 
-  try {
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+  const resp = fetchToResult(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
 
-    if (!resp.ok) {
-      throw Error(`failed to fetch: ${resp.status} ${resp.statusText}`);
-    }
+  return resp.andThen((res) => {
+    const json = ResultAsync.fromPromise<unknown, MiscError>(
+      res.json(),
+      (e) => {
+        if (e instanceof Error) {
+          return MiscError(e.name, e.message, e);
+        } else if (e instanceof DOMException) {
+          return MiscError(e.name, e.message, e);
+        } else {
+          return MiscError('UnidentifiedError', 'Unidentified error', e);
+        }
+      }
+    );
 
-    const json: Session = v.parse(sessionSchema, await resp.json());
-
-    return {
-      success: true,
-      data: json,
-    };
-  } catch (e) {
-    if (e instanceof Error) {
-      return {
-        success: false,
-        error: e,
-      };
-    } else {
-      return {
-        success: false,
-        error: Error('unidentified error', { cause: e }),
-      };
-    }
-  }
+    return json.andThen((j) => safeParseToResult(sessionSchema, j));
+  });
 };
 
-export const createRecord = async (
+export const createRecord = (
   did: string,
   accessJwt: string,
   content: string,
   link: string,
   entry: string
-): ResultAsync<null, Error> => {
+): ResultAsync<unknown, HttpError | MiscError> => {
   const url = 'https://bsky.social/xrpc/com.atproto.repo.createRecord';
 
-  try {
-    const payload = {
-      repo: did,
-      collection: 'app.bsky.feed.post',
-      record: {
-        text: content,
-        createdAt: new Date().toISOString(),
-        embed: {
-          $type: 'app.bsky.embed.external',
-          external: {
-            uri: link,
-            title: 'Go to ZpDIC Online',
-            description: entry
-          }
+  const payload = {
+    repo: did,
+    collection: 'app.bsky.feed.post',
+    record: {
+      text: content,
+      createdAt: new Date().toISOString(),
+      embed: {
+        $type: 'app.bsky.embed.external',
+        external: {
+          uri: link,
+          title: 'Go to ZpDIC Online',
+          description: entry,
+        },
+      },
+    },
+  };
+
+  const resp = fetchToResult(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessJwt}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  return resp.andThen((res) => {
+    const json = ResultAsync.fromPromise<unknown, MiscError>(
+      res.json(),
+      (e) => {
+        if (e instanceof Error) {
+          return MiscError(e.name, e.message, e);
+        } else if (e instanceof DOMException) {
+          return MiscError(e.name, e.message, e);
+        } else {
+          return MiscError('UnidentifiedError', 'Unidentified error', e);
         }
-      },
-    };
+      }
+    );
 
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessJwt}`,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!resp.ok) {
-      throw Error(`failed to fetch: ${resp.status} ${resp.statusText}`);
-    }
-
-    return {
-      success: true,
-      data: null,
-    };
-  } catch (e) {
-    if (e instanceof Error) {
-      return {
-        success: false,
-        error: e,
-      };
-    } else {
-      return {
-        success: false,
-        error: Error('unidentified error', { cause: e }),
-      };
-    }
-  }
+    return json;
+  });
 };
