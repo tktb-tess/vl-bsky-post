@@ -1,11 +1,11 @@
-import 'jsr:@std/dotenv/load';
+import '@std/dotenv/load';
 import {
   getTotalWords,
   fetchZpdicWord,
   WordWithExamples,
 } from './mod/zpdic-api.ts';
 
-import { authentication, createRecord } from './mod/bluesky-api.ts';
+import { createSession, createRecord } from './mod/bluesky-api.ts';
 
 const getRandomInt = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min) + min);
@@ -21,7 +21,7 @@ const formatWord = (word: WordWithExamples) => {
       return `/${word.pronunciation}/`;
     }
   })();
-  
+
   const meaning = word.equivalents
     .map(
       ({ titles, names }, i) =>
@@ -59,7 +59,10 @@ ${description}
 
 ${etymology}`;
 
-  const pre2 = pre.replaceAll(/\n{3,}/g, '\n\n').replace(/\n+$/, '').trim();
+  const pre2 = pre
+    .replaceAll(/\n{3,}/g, '\n\n')
+    .replace(/\n+$/, '')
+    .trim();
 
   return {
     formattedStr: pre2.length > 500 ? pre2.slice(0, 490) + '……' : pre2,
@@ -68,7 +71,7 @@ ${etymology}`;
   };
 };
 
-const main = async () => {
+const main = () => {
   const identifier = 'vaessenzlaendiskj.bsky.social';
   const password = Deno.env.get('BSKY_PASSWORD');
   const zpdicApiKey = Deno.env.get('ZPDIC_API_KEY');
@@ -79,45 +82,31 @@ const main = async () => {
     return -1;
   }
 
-  const numRes = await getTotalWords(zpdicApiKey, dicID);
+  const numRes = getTotalWords(zpdicApiKey, dicID);
 
-  if (!numRes.success) {
-    throw numRes.error;
-  }
-
-  const wRes = await fetchZpdicWord(
-    zpdicApiKey,
-    getRandomInt(0, numRes.data),
-    dicID
-  );
-
-  if (!wRes.success) {
-
-    throw wRes.error;
-  }
-  const word = wRes.data;
-
-  const { formattedStr, link, entry } = formatWord(word);
-
-  console.log(formattedStr);
-
-  const session = await authentication(identifier, password);
-
-  if (!session.success) {
-    throw session.error;
-  }
-
-  const { did, accessJwt } = session.data;
-
-  const res = await createRecord(did, accessJwt, formattedStr, link, entry);
-
-  if (!res.success) {
-    throw res.error;
-  }
-
-  console.log(`successfully posted.`);
-
-  return 0;
+  numRes
+    .andThen((total) => {
+      const random = getRandomInt(0, total);
+      return fetchZpdicWord(zpdicApiKey, random, dicID);
+    })
+    .map((word) => {
+      const formatted = formatWord(word);
+      return formatted;
+    })
+    .andThen(({ entry, link, formattedStr }) => {
+      return createSession(identifier, password)
+        .andThen(({ did, accessJwt }) => {
+          return createRecord(did, accessJwt, formattedStr, link, entry);
+        })
+        .map((response) => ({ entry, link, formattedStr, response }));
+    })
+    .match(
+      (post) => console.log(`Successfully posted. post:`, post.formattedStr, post),
+      (err) => {
+        console.error('An error was occured', err);
+        throw err;
+      }
+    );
 };
 
 main();
