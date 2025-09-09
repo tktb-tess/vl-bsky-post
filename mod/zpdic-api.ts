@@ -1,5 +1,11 @@
-import * as v from 'jsr:@valibot/valibot';
-import { ResultAsync } from './types.ts';
+import * as v from '@valibot/valibot';
+import {
+  fetchToResult,
+  HttpError,
+  MiscError,
+  safeParseToResult,
+} from './util.ts';
+import { err, ok, ResultAsync } from 'neverthrow';
 
 const __brand_object_id = Symbol('object-id');
 
@@ -93,97 +99,56 @@ export type ZpDICWordResponse = v.InferOutput<typeof zpdicWordResponseSchema>;
 
 export type ZpDICWordsResponse = v.InferOutput<typeof zpdicResponseSchema>;
 
-type VError = Error | v.ValiError<typeof zpdicResponseSchema>
+type VError = v.ValiError<typeof zpdicResponseSchema> | HttpError | MiscError;
 
-export const fetchZpdicWords = async (
+export const fetchZpdicWords = (
   apiKey: string,
   query: string,
   dicID: string
 ): ResultAsync<ZpDICWordsResponse, VError> => {
   const url = `https://zpdic.ziphil.com/api/v0/dictionary/${dicID}/words`;
 
-  try {
-    const resp = await fetch(url + query, {
-      method: 'GET',
-      headers: {
-        'X-Api-Key': apiKey,
-      },
+  const resp = fetchToResult(url + query, {
+    method: 'GET',
+    headers: {
+      'X-Api-Key': apiKey,
+    },
+  });
+
+  return resp.andThen((r) => {
+    const json = ResultAsync.fromPromise<unknown, MiscError>(r.json(), (e) => {
+      if (e instanceof Error) {
+        return MiscError(e.name, e.message, e);
+      } else if (e instanceof DOMException) {
+        return MiscError(e.name, e.message, e);
+      } else {
+        return MiscError('UnidentifiedError', 'Unidentified error', e);
+      }
     });
 
-    if (!resp.ok) {
-      throw Error(`failed to fetch: ${resp.status} ${resp.statusText}`);
-    }
-
-    const result = v.safeParse(zpdicResponseSchema, await resp.json());
-
-    if (!result.success) {
-      
-      return {
-        success: false,
-        error: new v.ValiError(result.issues),
-      }
-    }
-
-    return {
-      success: true,
-      data: result.output,
-    };
-  } catch (e) {
-    if (e instanceof Error) {
-      return {
-        success: false,
-        error: e,
-      };
-    } else {
-      return {
-        success: false,
-        error: Error('unidentified error', { cause: e }),
-      };
-    }
-  }
+    return json.andThen((j) => safeParseToResult(zpdicResponseSchema, j));
+  });
 };
 
-export const getTotalWords = async (
+export const getTotalWords = (
   apiKey: string,
   dicID: string
 ): ResultAsync<number, VError> => {
-  const result = await fetchZpdicWords(apiKey, '?text=', dicID);
-  if (!result.success) {
-    return result;
-  }
+  const result = fetchZpdicWords(apiKey, '?text=', dicID);
 
-  return {
-    success: true,
-    data: result.data.total,
-  };
+  return result.map(({ total }) => total);
 };
 
-export const fetchZpdicWord = async (
+export const fetchZpdicWord = (
   apiKey: string,
   index: number,
   dicID: string
 ): ResultAsync<WordWithExamples, VError> => {
-  const res = await fetchZpdicWords(
-    apiKey,
-    `?text=&skip=${index}&limit=1`,
-    dicID
-  );
+  const res = fetchZpdicWords(apiKey, `?text=&skip=${index}&limit=1`, dicID);
 
-  if (!res.success) {
-    return res;
-  }
-
-  const word = res.data.words.at(0);
-
-  if (!word) {
-    return {
-      success: false,
-      error: Error('WordNotFound'),
-    };
-  }
-
-  return {
-    success: true,
-    data: word,
-  };
+  return res.andThen(({ words }) => {
+    const word = words.at(0);
+    if (!word) return err(MiscError('FetchError', 'No Words are found'));
+    return ok(word);
+  });
 };

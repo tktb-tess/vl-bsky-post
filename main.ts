@@ -1,11 +1,11 @@
-import 'jsr:@std/dotenv/load';
+import '@std/dotenv/load';
 import {
   getTotalWords,
   fetchZpdicWord,
   WordWithExamples,
 } from './mod/zpdic-api.ts';
 
-import { authentication, createRecord } from './mod/bluesky-api.ts';
+import { createSession, createRecord } from './mod/bluesky-api.ts';
 
 const getRandomInt = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min) + min);
@@ -101,7 +101,7 @@ const main = async () => {
 
   console.log(formattedStr);
 
-  const session = await authentication(identifier, password);
+  const session = await createSession(identifier, password);
 
   if (!session.success) {
     throw session.error;

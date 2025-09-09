@@ -1,5 +1,5 @@
 import type { ResultAsync } from './types.ts';
-import * as v from 'jsr:@valibot/valibot';
+import * as v from '@valibot/valibot';
 
 export const sessionSchema = v.object({
   accessJwt: v.string(),
@@ -20,9 +20,9 @@ export const sessionSchema = v.object({
   ),
 });
 
-export type Session = v.InferInput<typeof sessionSchema>;
+export type Session = v.InferOutput<typeof sessionSchema>;
 
-export const authentication = async (
+export const createSession = async (
   identifier: string,
   password: string
 ): ResultAsync<Session, Error> => {
