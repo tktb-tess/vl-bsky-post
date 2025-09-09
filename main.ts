@@ -120,7 +120,7 @@ const main = () => {
     })
     .match(
       (post) =>
-        console.log(`Successfully posted. post:`, post.formattedStr, post),
+        console.log(`Successfully posted. post:`, post.formattedStr),
       (err) => {
         console.error('An error was occured', err);
         throw err;
