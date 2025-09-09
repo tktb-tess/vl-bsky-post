@@ -3,9 +3,13 @@ import {
   getTotalWords,
   fetchZpdicWord,
   WordWithExamples,
+  zpdicResponseSchema,
 } from './mod/zpdic-api.ts';
 
 import { createSession, createRecord } from './mod/bluesky-api.ts';
+import { err, errAsync, ResultAsync } from 'neverthrow';
+import { HttpError, MiscError } from './mod/util.ts';
+import * as v from '@valibot/valibot';
 
 const getRandomInt = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min) + min);
@@ -77,15 +81,26 @@ const main = () => {
   const zpdicApiKey = Deno.env.get('ZPDIC_API_KEY');
   const dicID = '633';
 
-  if (!password || !zpdicApiKey) {
-    console.error('cannot get env');
-    return -1;
-  }
+  type KeyAndTotal = {
+    zpdicApiKey: string;
+    total: number;
+  };
 
-  const numRes = getTotalWords(zpdicApiKey, dicID);
+  const checkEnv = (): ResultAsync<
+    KeyAndTotal,
+    HttpError | v.ValiError<typeof zpdicResponseSchema> | MiscError
+  > => {
+    if (!zpdicApiKey) {
+      return errAsync(MiscError('EnvVarError', 'cannot get ZPDIC_API_KEY'));
+    }
+    return getTotalWords(zpdicApiKey, dicID).map((total) => ({
+      zpdicApiKey,
+      total,
+    }));
+  };
 
-  numRes
-    .andThen((total) => {
+  checkEnv()
+    .andThen(({ total, zpdicApiKey }) => {
       const random = getRandomInt(0, total);
       return fetchZpdicWord(zpdicApiKey, random, dicID);
     })
@@ -94,6 +109,9 @@ const main = () => {
       return formatted;
     })
     .andThen(({ entry, link, formattedStr }) => {
+      if (!password) {
+        return err(MiscError('EnvVarError', 'cannot get BSKY_PASSWORD'));
+      }
       return createSession(identifier, password)
         .andThen(({ did, accessJwt }) => {
           return createRecord(did, accessJwt, formattedStr, link, entry);
@@ -101,7 +119,8 @@ const main = () => {
         .map((response) => ({ entry, link, formattedStr, response }));
     })
     .match(
-      (post) => console.log(`Successfully posted. post:`, post.formattedStr, post),
+      (post) =>
+        console.log(`Successfully posted. post:`, post.formattedStr, post),
       (err) => {
         console.error('An error was occured', err);
         throw err;
