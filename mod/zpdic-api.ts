@@ -7,9 +7,9 @@ import {
 } from './util.ts';
 import { err, ok, ResultAsync } from 'neverthrow';
 
-const __brand_object_id = Symbol('object-id');
+const obj_id_brand = Symbol('object-id');
 
-const objectIdSchema = v.pipe(v.string(), v.brand(__brand_object_id));
+const objectIdSchema = v.pipe(v.string(), v.brand(obj_id_brand));
 
 const equivalentSchema = v.object({
   titles: v.array(v.string()),
@@ -65,7 +65,7 @@ const exampleSchema = v.object({
   ),
 });
 
-const __word_brand = Symbol('ZpDIC-word');
+const word_brand = Symbol('ZpDIC-word');
 
 export const wordWithExamplesSchema = v.pipe(
   v.object({
@@ -81,7 +81,7 @@ export const wordWithExamplesSchema = v.pipe(
     relations: v.array(relationSchema),
     examples: v.array(exampleSchema),
   }),
-  v.brand(__word_brand)
+  v.brand(word_brand)
 );
 
 export type WordWithExamples = v.InferOutput<typeof wordWithExamplesSchema>;
@@ -103,10 +103,13 @@ export const fetchZpdicWords = (
   apiKey: string,
   query: string,
   dicID: string
-): ResultAsync<ZpDICWordsResponse, v.ValiError<typeof zpdicResponseSchema> | HttpError | MiscError> => {
-  const url = `https://zpdic.ziphil.com/api/v0/dictionary/${dicID}/words`;
+): ResultAsync<
+  ZpDICWordsResponse,
+  v.ValiError<typeof zpdicResponseSchema> | HttpError | MiscError
+> => {
+  const url = `https://zpdic.ziphil.com/api/v0/dictionary/${dicID}/words${query}`;
 
-  const resp = fetchToResult(url + query, {
+  const resp = fetchToResult(url, {
     method: 'GET',
     headers: {
       'X-Api-Key': apiKey,
@@ -131,7 +134,10 @@ export const fetchZpdicWords = (
 export const getTotalWords = (
   apiKey: string,
   dicID: string
-): ResultAsync<number, v.ValiError<typeof zpdicResponseSchema> | HttpError | MiscError> => {
+): ResultAsync<
+  number,
+  v.ValiError<typeof zpdicResponseSchema> | HttpError | MiscError
+> => {
   const result = fetchZpdicWords(apiKey, '?text=', dicID);
 
   return result.map(({ total }) => total);
@@ -141,7 +147,10 @@ export const fetchZpdicWord = (
   apiKey: string,
   index: number,
   dicID: string
-): ResultAsync<WordWithExamples, v.ValiError<typeof zpdicResponseSchema> | HttpError | MiscError> => {
+): ResultAsync<
+  WordWithExamples,
+  v.ValiError<typeof zpdicResponseSchema> | HttpError | MiscError
+> => {
   const res = fetchZpdicWords(apiKey, `?text=&skip=${index}&limit=1`, dicID);
 
   return res.andThen(({ words }) => {

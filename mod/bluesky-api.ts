@@ -32,14 +32,14 @@ export const createSession = (
   identifier: string,
   password: string
 ): ResultAsync<Session, MiscError | HttpError | v.ValiError<typeof sessionSchema>> => {
-  const url = 'https://bsky.social/xrpc/com.atproto.server.createSession';
+  const endpoint = 'https://bsky.social/xrpc/com.atproto.server.createSession';
 
   const payload = {
     identifier,
     password,
   };
 
-  const resp = fetchToResult(url, {
+  const resp = fetchToResult(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -52,8 +52,6 @@ export const createSession = (
       res.json(),
       (e) => {
         if (e instanceof Error) {
-          return MiscError.from(e.name, e.message, e);
-        } else if (e instanceof DOMException) {
           return MiscError.from(e.name, e.message, e);
         } else {
           return MiscError.from('UnidentifiedError', 'Unidentified error', e);
@@ -72,7 +70,7 @@ export const createRecord = (
   link: string,
   entry: string
 ): ResultAsync<unknown, HttpError | MiscError> => {
-  const url = 'https://bsky.social/xrpc/com.atproto.repo.createRecord';
+  const endpoint = 'https://bsky.social/xrpc/com.atproto.repo.createRecord';
 
   const payload = {
     repo: did,
@@ -91,7 +89,7 @@ export const createRecord = (
     },
   };
 
-  const resp = fetchToResult(url, {
+  const resp = fetchToResult(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -105,8 +103,6 @@ export const createRecord = (
       res.json(),
       (e) => {
         if (e instanceof Error) {
-          return MiscError.from(e.name, e.message, e);
-        } else if (e instanceof DOMException) {
           return MiscError.from(e.name, e.message, e);
         } else {
           return MiscError.from('UnidentifiedError', 'Unidentified error', e);

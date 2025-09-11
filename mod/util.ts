@@ -1,12 +1,12 @@
 import { ok, err, okAsync, errAsync, Result, ResultAsync } from 'neverthrow';
 import * as v from '@valibot/valibot';
 
-const __brand_http_err = Symbol('http-error');
+const http_err_brand = Symbol('http-error');
 
 type HttpError = {
-  status: number;
-  statusText: string;
-  [__brand_http_err]: typeof __brand_http_err;
+  readonly status: number;
+  readonly statusText: string;
+  readonly [http_err_brand]: typeof http_err_brand;
 };
 
 const HttpError = {
@@ -20,13 +20,13 @@ const HttpError = {
 
 export { HttpError };
 
-const __brand_misc_error = Symbol('misc-error');
+const misc_err_brand = Symbol('misc-error');
 
 type MiscError<T = unknown> = {
-  name: string;
-  message: string;
-  cause?: T;
-  [__brand_misc_error]: typeof __brand_misc_error;
+  readonly name: string;
+  readonly message: string;
+  readonly cause?: T;
+  readonly [misc_err_brand]: typeof misc_err_brand;
 };
 
 const MiscError = {

@@ -91,7 +91,9 @@ const main = () => {
     HttpError | v.ValiError<typeof zpdicResponseSchema> | MiscError
   > => {
     if (!zpdicApiKey) {
-      return errAsync(MiscError.from('EnvVarError', 'cannot get ZPDIC_API_KEY'));
+      return errAsync(
+        MiscError.from('EnvVarError', 'cannot get ZPDIC_API_KEY')
+      );
     }
     return getTotalWords(zpdicApiKey, dicID).map((total) => ({
       zpdicApiKey,
@@ -119,8 +121,7 @@ const main = () => {
         .map(() => ({ entry, link, formattedStr }));
     })
     .match(
-      (post) =>
-        console.log(`Successfully posted. post:\n`, post),
+      (post) => console.log(`Successfully posted. post:\n`, post),
       (err) => {
         console.error('An error was occured', err);
         throw err;
@@ -128,4 +129,12 @@ const main = () => {
     );
 };
 
-main();
+Deno.cron('Post to Bluesky', '0 * * * *', () => main());
+
+Deno.serve(
+  { path: '/' },
+  () =>
+    new Response('There is nothing here.', {
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    })
+);
