@@ -181,9 +181,9 @@ Deno.serve(async () => {
   const headers = {
     'Content-Type': 'application/json',
   } as const;
-  const schema = v.string();
+
   const kv = await Deno.openKv();
-  const parsed = v.safeParse(schema, (await kv.get(['post data'])).value);
+  const parsed = v.safeParse(v.string(), (await kv.get(['post data'])).value);
 
   if (!parsed.success) {
     const e = new v.ValiError(parsed.issues);
