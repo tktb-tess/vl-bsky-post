@@ -81,13 +81,8 @@ const main = () => {
   const zpdicApiKey = Deno.env.get('ZPDIC_API_KEY');
   const dicID = '633';
 
-  type KeyAndTotal = {
-    zpdicApiKey: string;
-    total: number;
-  };
-
   const checkEnv = (): ResultAsync<
-    KeyAndTotal,
+    readonly [string, number],
     HttpError | v.ValiError<typeof zpdicResponseSchema> | MiscError
   > => {
     if (!zpdicApiKey) {
@@ -95,14 +90,13 @@ const main = () => {
         MiscError.from('EnvVarError', 'cannot get ZPDIC_API_KEY')
       );
     }
-    return getTotalWords(zpdicApiKey, dicID).map((total) => ({
-      zpdicApiKey,
-      total,
-    }));
+    return getTotalWords(zpdicApiKey, dicID).map(
+      (total) => [zpdicApiKey, total] as const
+    );
   };
 
   checkEnv()
-    .andThen(({ total, zpdicApiKey }) => {
+    .andThen(([zpdicApiKey, total]) => {
       const random = getRandomInt(0, total);
       return fetchZpdicWord(zpdicApiKey, random, dicID);
     })

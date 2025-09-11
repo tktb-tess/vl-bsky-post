@@ -27,6 +27,6 @@ jobs:
       - name: Upload to Deno Deploy
         uses: denoland/deployctl@v1
         with:
-          project: tessyrrhaqt-vl-bsky-pos
+          project: 'tktb-tess-vl-bsky'
           entrypoint: 'main.ts'
-          root: .
+          root: '.'
