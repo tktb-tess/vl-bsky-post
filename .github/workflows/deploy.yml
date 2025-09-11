@@ -1,13 +1,14 @@
-name: Post to BlueSky # no longer used
+name: Deploy
 on:
-  # schedule:
-  #  - cron: '0 * * * *'
+  push:
+    branches:
+      - main
 
   workflow_dispatch:
 
 jobs:
-  run:
-    name: Post
+  deploy:
+    name: Deploy
     runs-on: ubuntu-latest
 
     permissions:
@@ -23,8 +24,9 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Run
-        env: 
-          BSKY_PASSWORD: ${{ secrets.BSKY_PASSWORD }}
-          ZPDIC_API_KEY: ${{ secrets.ZPDIC_API_KEY }}
-        run: BSKY_PASSWORD=$BSKY_PASSWORD ZPDIC_API_KEY=$ZPDIC_API_KEY deno run --allow-read --allow-net --allow-env main.ts
+      - name: Upload to Deno Deploy
+        uses: denoland/deployctl@v1
+        with:
+          project: tessyrrhaqt-vl-bsky-pos
+          entrypoint: 'main.ts'
+          root: .
