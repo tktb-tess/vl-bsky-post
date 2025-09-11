@@ -52,11 +52,11 @@ export const createSession = (
       res.json(),
       (e) => {
         if (e instanceof Error) {
-          return MiscError(e.name, e.message, e);
+          return MiscError.from(e.name, e.message, e);
         } else if (e instanceof DOMException) {
-          return MiscError(e.name, e.message, e);
+          return MiscError.from(e.name, e.message, e);
         } else {
-          return MiscError('UnidentifiedError', 'Unidentified error', e);
+          return MiscError.from('UnidentifiedError', 'Unidentified error', e);
         }
       }
     );
@@ -105,11 +105,11 @@ export const createRecord = (
       res.json(),
       (e) => {
         if (e instanceof Error) {
-          return MiscError(e.name, e.message, e);
+          return MiscError.from(e.name, e.message, e);
         } else if (e instanceof DOMException) {
-          return MiscError(e.name, e.message, e);
+          return MiscError.from(e.name, e.message, e);
         } else {
-          return MiscError('UnidentifiedError', 'Unidentified error', e);
+          return MiscError.from('UnidentifiedError', 'Unidentified error', e);
         }
       }
     );

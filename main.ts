@@ -91,7 +91,7 @@ const main = () => {
     HttpError | v.ValiError<typeof zpdicResponseSchema> | MiscError
   > => {
     if (!zpdicApiKey) {
-      return errAsync(MiscError('EnvVarError', 'cannot get ZPDIC_API_KEY'));
+      return errAsync(MiscError.from('EnvVarError', 'cannot get ZPDIC_API_KEY'));
     }
     return getTotalWords(zpdicApiKey, dicID).map((total) => ({
       zpdicApiKey,
@@ -110,17 +110,17 @@ const main = () => {
     })
     .andThen(({ entry, link, formattedStr }) => {
       if (!password) {
-        return err(MiscError('EnvVarError', 'cannot get BSKY_PASSWORD'));
+        return err(MiscError.from('EnvVarError', 'cannot get BSKY_PASSWORD'));
       }
       return createSession(identifier, password)
         .andThen(({ did, accessJwt }) => {
           return createRecord(did, accessJwt, formattedStr, link, entry);
         })
-        .map((response) => ({ entry, link, formattedStr, response }));
+        .map(() => ({ entry, link, formattedStr }));
     })
     .match(
       (post) =>
-        console.log(`Successfully posted. post:`, post.formattedStr),
+        console.log(`Successfully posted. post:\n`, post),
       (err) => {
         console.error('An error was occured', err);
         throw err;

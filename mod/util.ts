@@ -9,29 +9,39 @@ type HttpError = {
   [__brand_http_err]: typeof __brand_http_err;
 };
 
-const HttpError = (status: number, statusText: string): HttpError => ({
-  status,
-  statusText,
-  [__brand_http_err]: __brand_http_err,
-});
+const HttpError = {
+  from: (status: number, statusText: string): HttpError => {
+    return {
+      status,
+      statusText,
+    } as HttpError;
+  },
+};
 
 export { HttpError };
 
 const __brand_misc_error = Symbol('misc-error');
 
-type MiscError = {
+type MiscError<T = unknown> = {
   name: string;
   message: string;
-  cause?: unknown;
+  cause?: T;
   [__brand_misc_error]: typeof __brand_misc_error;
 };
 
-const MiscError = (name: string, message: string, cause?: unknown): MiscError => ({
-  name,
-  message,
-  cause,
-  [__brand_misc_error]: __brand_misc_error,
-});
+const MiscError = {
+  from: <T = unknown>(
+    name: string,
+    message: string,
+    cause?: T
+  ): MiscError<T> => {
+    return {
+      name,
+      message,
+      cause,
+    } as MiscError<T>;
+  },
+};
 
 export { MiscError };
 
@@ -51,18 +61,17 @@ export const safeParseToResult = <
   return ok(result.output);
 };
 
-
 export const fetchToResult = (
   url: string | URL,
   init?: RequestInit
 ): ResultAsync<Response, HttpError> => {
   const respResult = ResultAsync.fromPromise(fetch(url, init), (e) =>
-    HttpError(500, e instanceof Error ? e.message : `Unidentified error`)
+    HttpError.from(500, e instanceof Error ? e.message : `Unidentified error`)
   );
 
   return respResult.andThen((resp) => {
     if (!resp.ok) {
-      return errAsync(HttpError(resp.status, resp.statusText));
+      return errAsync(HttpError.from(resp.status, resp.statusText));
     }
     return okAsync(resp);
   });

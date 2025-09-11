@@ -67,7 +67,7 @@ const exampleSchema = v.object({
 
 const __word_brand = Symbol('ZpDIC-word');
 
-export const wordSchema = v.pipe(
+export const wordWithExamplesSchema = v.pipe(
   v.object({
     id: objectIdSchema,
     number: v.pipe(v.number(), v.integer()),
@@ -84,15 +84,15 @@ export const wordSchema = v.pipe(
   v.brand(__word_brand)
 );
 
-export type WordWithExamples = v.InferOutput<typeof wordSchema>;
+export type WordWithExamples = v.InferOutput<typeof wordWithExamplesSchema>;
 
 export const zpdicResponseSchema = v.object({
-  words: v.array(wordSchema),
+  words: v.array(wordWithExamplesSchema),
   total: v.pipe(v.number(), v.integer()),
 });
 
 const zpdicWordResponseSchema = v.object({
-  word: wordSchema,
+  word: wordWithExamplesSchema,
 });
 
 export type ZpDICWordResponse = v.InferOutput<typeof zpdicWordResponseSchema>;
@@ -116,11 +116,11 @@ export const fetchZpdicWords = (
   return resp.andThen((r) => {
     const json = ResultAsync.fromPromise<unknown, MiscError>(r.json(), (e) => {
       if (e instanceof Error) {
-        return MiscError(e.name, e.message, e);
+        return MiscError.from(e.name, e.message, e);
       } else if (e instanceof DOMException) {
-        return MiscError(e.name, e.message, e);
+        return MiscError.from(e.name, e.message, e);
       } else {
-        return MiscError('UnidentifiedError', 'Unidentified error', e);
+        return MiscError.from('UnidentifiedError', 'Unidentified error', e);
       }
     });
 
@@ -146,7 +146,7 @@ export const fetchZpdicWord = (
 
   return res.andThen(({ words }) => {
     const word = words.at(0);
-    if (!word) return err(MiscError('FetchError', 'No Words are found'));
+    if (!word) return err(MiscError.from('FetchError', 'No Words are found'));
     return ok(word);
   });
 };
