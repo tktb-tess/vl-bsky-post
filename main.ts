@@ -132,7 +132,6 @@ const main = () => {
 Deno.cron('Post to Bluesky', '0 * * * *', () => main());
 
 Deno.serve(
-  { path: '/' },
   () =>
     new Response('There is nothing here.', {
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
