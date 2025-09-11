@@ -3,12 +3,11 @@ import {
   getTotalWords,
   fetchZpdicWord,
   WordWithExamples,
-  zpdicResponseSchema,
 } from './mod/zpdic-api.ts';
 
 import { createSession, createRecord } from './mod/bluesky-api.ts';
-import { err, errAsync, ResultAsync } from 'neverthrow';
-import { HttpError, MiscError } from './mod/util.ts';
+import { ResultAsync } from 'neverthrow';
+import { MiscError } from './mod/util.ts';
 import * as v from '@valibot/valibot';
 
 const getRandomInt = (min: number, max: number) => {
@@ -75,59 +74,122 @@ ${etymology}`;
   };
 };
 
-const main = () => {
+const main = async () => {
   const identifier = 'vaessenzlaendiskj.bsky.social';
   const password = Deno.env.get('BSKY_PASSWORD');
   const zpdicApiKey = Deno.env.get('ZPDIC_API_KEY');
+  const runtime = Deno.env.get('RUNTIME');
   const dicID = '633';
 
-  const checkEnv = (): ResultAsync<
-    readonly [string, number],
-    HttpError | v.ValiError<typeof zpdicResponseSchema> | MiscError
-  > => {
-    if (!zpdicApiKey) {
-      return errAsync(
-        MiscError.from('EnvVarError', 'cannot get ZPDIC_API_KEY')
-      );
-    }
-    return getTotalWords(zpdicApiKey, dicID).map(
-      (total) => [zpdicApiKey, total] as const
+  if (!password) {
+    const err = MiscError.from(
+      'EnvVariableError',
+      `Couldn't get BSKY_PASSWORD`
     );
-  };
+    console.error(err);
+    throw err;
+  }
 
-  checkEnv()
-    .andThen(([zpdicApiKey, total]) => {
+  if (!zpdicApiKey) {
+    const err = MiscError.from(
+      'EnvVariableError',
+      `Couldn't get ZPDIC_API_KEY`
+    );
+    console.error(err);
+    throw err;
+  }
+
+  if (!runtime) {
+    const err = MiscError.from('EnvVariableError', `Couldn't get RUNTIME`);
+    console.error(err);
+    throw err;
+  }
+
+  if (runtime !== 'local' && runtime !== 'deno-deploy') {
+    const err = MiscError.from('EnvVariableError', `RUNTIME is invalid`);
+    console.error(err);
+    throw err;
+  }
+
+  const formatResult = await getTotalWords(zpdicApiKey, dicID)
+    .andThen((total) => {
       const random = getRandomInt(0, total);
+
       return fetchZpdicWord(zpdicApiKey, random, dicID);
     })
-    .map((word) => {
-      const formatted = formatWord(word);
-      return formatted;
-    })
-    .andThen(({ entry, link, formattedStr }) => {
-      if (!password) {
-        return err(MiscError.from('EnvVarError', 'cannot get BSKY_PASSWORD'));
-      }
-      return createSession(identifier, password)
-        .andThen(({ did, accessJwt }) => {
-          return createRecord(did, accessJwt, formattedStr, link, entry);
-        })
-        .map(() => ({ entry, link, formattedStr }));
-    })
-    .match(
-      (post) => console.log(`Successfully posted. post:\n`, post),
-      (err) => {
-        console.error('An error was occured', err);
-        throw err;
-      }
-    );
+    .map((word) => formatWord(word));
+
+  if (formatResult.isErr()) {
+    console.error(formatResult.error);
+    throw formatResult.error;
+  }
+
+  const formatted = formatResult.value;
+
+  switch (runtime) {
+    case 'local': {
+      console.log(runtime, `: Successfully fetched. post:\n`, formatted);
+      return;
+    }
+    case 'deno-deploy': {
+      const taskf1 = ResultAsync.fromThrowable(
+        async () => {
+          const kv = await Deno.openKv();
+          await kv.set(['post data'], JSON.stringify(formatted));
+        },
+        (e) => {
+          if (e instanceof Error) {
+            return MiscError.from(e.name, e.message, e);
+          } else {
+            return MiscError.from('UnidentifiedError', 'Unidentified error', e);
+          }
+        }
+      );
+
+      const task1 = taskf1().match(
+        () => console.log('Post data is successfully stored'),
+        (e) => console.error(e)
+      );
+
+      const { entry, link, formattedStr } = formatted;
+
+      const task2 = createSession(identifier, password)
+        .andThen(({ did, accessJwt }) =>
+          createRecord(did, accessJwt, formattedStr, link, entry)
+        )
+        .match(
+          () =>
+            console.log(runtime, `: Successfully fetched. post:\n`, formatted),
+
+          (e) => console.error(e)
+        );
+
+      const results = await Promise.allSettled([task1, task2]);
+
+      console.log(...results.map(({ status }, i) => `task${i}: ${status}`));
+
+      return;
+    }
+  }
 };
+
+// await main();
 
 Deno.cron('Post to Bluesky', '0 * * * *', () => main());
 
-Deno.serve(
-  () =>
-    new Response('There is nothing here.', {
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    })
-);
+Deno.serve(async () => {
+  const headers = {
+    'Content-Type': 'application/json',
+  } as const;
+  const schema = v.string();
+  const kv = await Deno.openKv();
+  const parsed = v.safeParse(schema, (await kv.get(['post data'])).value);
+
+  if (!parsed.success) {
+    const e = new v.ValiError(parsed.issues);
+    console.error(e);
+    return new Response(JSON.stringify(parsed.issues), { headers });
+  }
+
+  return new Response(parsed.output, { headers });
+});
