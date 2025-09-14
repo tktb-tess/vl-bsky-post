@@ -121,7 +121,7 @@ Deno.serve(async () => {
   } as const;
 
   const headers2 = {
-    'Content-Type': 'text/html',
+    'Content-Type': 'text/html; charset=utf-8',
   } as const;
 
   const kv = await Deno.openKv();
