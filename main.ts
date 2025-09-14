@@ -116,7 +116,11 @@ if (Deno.env.get('RUNTIME') === 'local') {
 Deno.cron('Post to Bluesky', '0 * * * *', () => main());
 
 Deno.serve(async () => {
-  const headers = {
+  const headers1 = {
+    'Content-Type': 'application/json',
+  } as const;
+
+  const headers2 = {
     'Content-Type': 'application/json',
   } as const;
 
@@ -126,7 +130,7 @@ Deno.serve(async () => {
   if (!parsed.success) {
     const e = new v.ValiError(parsed.issues);
     console.error(e);
-    return new Response(JSON.stringify(parsed.issues), { headers });
+    return new Response(JSON.stringify(parsed.issues), { headers: headers1 });
   }
 
   const postR = v.safeParse(postDataSchema, JSON.parse(parsed.output));
@@ -134,12 +138,13 @@ Deno.serve(async () => {
   if (!postR.success) {
     const e = new v.ValiError(postR.issues);
     console.error(e);
-    return new Response(JSON.stringify(postR.issues), { headers });
+    return new Response(JSON.stringify(postR.issues), { headers: headers1 });
   }
 
   const post = postR.output;
 
-  const body = `<p>${post.formattedStr}</p><p><a href=${post.link}>${post.link}</a></p>`;
+  const body = `<p>${post.formattedStr}</p>
+<p><a href=${post.link}>${post.link}</a></p>`;
 
-  return new Response(body, { headers });
+  return new Response(body, { headers: headers2 });
 });
