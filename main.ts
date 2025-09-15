@@ -3,7 +3,7 @@ import { getTotalWords, fetchZpdicWord } from './mod/zpdic-api.ts';
 
 import { createSession, createRecord } from './mod/bluesky-api.ts';
 import { ResultAsync } from 'neverthrow';
-import { MiscError, formatWord, postDataSchema } from './mod/util.ts';
+import { MiscError, formatWord, postDataSchema, safeParseToResult } from './mod/util.ts';
 import * as v from '@valibot/valibot';
 
 const getRandomInt = (min: number, max: number) => {
@@ -102,7 +102,7 @@ const main = async () => {
 
       const results = await Promise.allSettled([task1, task2]);
 
-      console.log(...results.map(({ status }, i) => `task${i}: ${status}`));
+      console.log(...results.map(({ status }, i) => `task${i + 1}: ${status}`));
 
       return;
     }
@@ -116,35 +116,34 @@ if (Deno.env.get('RUNTIME') === 'local') {
 Deno.cron('Post to Bluesky', '0 * * * *', () => main());
 
 Deno.serve(async () => {
-  const headers1 = {
-    'Content-Type': 'application/json',
+  const jsonHeader = {
+    'Content-Type': 'application/json; charset=utf-8',
   } as const;
 
-  const headers2 = {
+  const htmlHeader = {
     'Content-Type': 'text/html; charset=utf-8',
   } as const;
 
   const kv = await Deno.openKv();
-  const parsed = v.safeParse(v.string(), (await kv.get(['post data'])).value);
+  const parsed = safeParseToResult(v.string(), (await kv.get(['post data'])).value);
 
-  if (!parsed.success) {
-    const e = new v.ValiError(parsed.issues);
+  if (parsed.isErr()) {
+    const e = parsed.error;
     console.error(e);
-    return new Response(JSON.stringify(e), { headers: headers1 });
+    return new Response(JSON.stringify(e), { headers: jsonHeader });
   }
 
-  const postR = v.safeParse(postDataSchema, JSON.parse(parsed.output));
+  const postR = safeParseToResult(postDataSchema, JSON.parse(parsed.value));
 
-  if (!postR.success) {
-    const e = new v.ValiError(postR.issues);
+  if (postR.isErr()) {
+    const e = postR.error;
     console.error(e);
-    return new Response(JSON.stringify(e), { headers: headers1 });
+    return new Response(JSON.stringify(e), { headers: jsonHeader });
   }
 
-  const post = postR.output;
+  const post = postR.value;
 
-  const body = `<p>${post.formattedStr}</p>
-<p><a href=${post.link}>${post.link}</a></p>`;
+  const body = `<p>${post.formattedStr}</p><p><a href=${post.link}>ZpDIC Online</a></p>`;
 
-  return new Response(body, { headers: headers2 });
+  return new Response(body, { headers: htmlHeader });
 });
