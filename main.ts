@@ -146,10 +146,17 @@ Deno.serve(async () => {
 
   const post = postR.value;
 
-  const body = `${post.formattedStr
+  const honbun = post.formattedStr
     .split('\n')
     .map((p) => `<p>${p}</p>`)
-    .join('')}<p><a href=${post.link}>ZpDIC Online</a></p>`;
+    .join('');
+
+  const link = `<p><a href=${post.link}>ZpDIC Online</a></p>`;
+
+  const style = `<style>body {font-family: 'Inter', 'Arial', 'Helvetica Neue', 'Noto Sans JP', sans-serif;} .ipa {font-family: 'Charis SIL', 'Times New Roman', serif;}</style>`;
+  
+
+  const body = `${style}${honbun}${link}`;
 
   return new Response(body, { headers: htmlHeader });
 });
