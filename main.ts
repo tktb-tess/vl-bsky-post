@@ -146,7 +146,10 @@ Deno.serve(async () => {
 
   const post = postR.value;
 
-  const body = `<p>${post.formattedStr}</p><p><a href=${post.link}>ZpDIC Online</a></p>`;
+  const body = `${post.formattedStr
+    .split('\n')
+    .map((p) => `<p>${p}</p>`)
+    .join('')}<p><a href=${post.link}>ZpDIC Online</a></p>`;
 
   return new Response(body, { headers: htmlHeader });
 });
