@@ -3,49 +3,49 @@ import { getTotalWords, fetchZpdicWord } from './mod/zpdic-api.ts';
 
 import { createSession, createRecord } from './mod/bluesky-api.ts';
 import { ResultAsync } from 'neverthrow';
-import { MiscError, formatWord, postDataSchema, safeParseToResult } from './mod/util.ts';
+import {
+  MiscError,
+  formatWord,
+  postDataSchema,
+  safeParseToResult,
+} from './mod/util.ts';
 import * as v from '@valibot/valibot';
 
 const getRandomInt = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min) + min);
 };
 
+const password = Deno.env.get('BSKY_PASSWORD');
+const zpdicApiKey = Deno.env.get('ZPDIC_API_KEY');
+const runtime = Deno.env.get('RUNTIME');
+
+if (!password) {
+  const err = MiscError.from('EnvVariableError', `Couldn't get BSKY_PASSWORD`);
+  console.error(err);
+  throw err;
+}
+
+if (!zpdicApiKey) {
+  const err = MiscError.from('EnvVariableError', `Couldn't get ZPDIC_API_KEY`);
+  console.error(err);
+  throw err;
+}
+
+if (!runtime) {
+  const err = MiscError.from('EnvVariableError', `Couldn't get RUNTIME`);
+  console.error(err);
+  throw err;
+}
+
+if (runtime !== 'local' && runtime !== 'deno-deploy') {
+  const err = MiscError.from('EnvVariableError', `RUNTIME is invalid`);
+  console.error(err);
+  throw err;
+}
+
 const main = async () => {
   const identifier = 'vaessenzlaendiskj.bsky.social';
-  const password = Deno.env.get('BSKY_PASSWORD');
-  const zpdicApiKey = Deno.env.get('ZPDIC_API_KEY');
-  const runtime = Deno.env.get('RUNTIME');
   const dicID = '633';
-
-  if (!password) {
-    const err = MiscError.from(
-      'EnvVariableError',
-      `Couldn't get BSKY_PASSWORD`
-    );
-    console.error(err);
-    throw err;
-  }
-
-  if (!zpdicApiKey) {
-    const err = MiscError.from(
-      'EnvVariableError',
-      `Couldn't get ZPDIC_API_KEY`
-    );
-    console.error(err);
-    throw err;
-  }
-
-  if (!runtime) {
-    const err = MiscError.from('EnvVariableError', `Couldn't get RUNTIME`);
-    console.error(err);
-    throw err;
-  }
-
-  if (runtime !== 'local' && runtime !== 'deno-deploy') {
-    const err = MiscError.from('EnvVariableError', `RUNTIME is invalid`);
-    console.error(err);
-    throw err;
-  }
 
   const formatResult = await getTotalWords(zpdicApiKey, dicID)
     .andThen((total) => {
@@ -109,7 +109,7 @@ const main = async () => {
   }
 };
 
-if (Deno.env.get('RUNTIME') === 'local') {
+if (runtime === 'local') {
   await main();
 }
 
@@ -125,7 +125,10 @@ Deno.serve(async () => {
   } as const;
 
   const kv = await Deno.openKv();
-  const parsed = safeParseToResult(v.string(), (await kv.get(['post data'])).value);
+  const parsed = safeParseToResult(
+    v.string(),
+    (await kv.get(['post data'])).value
+  );
 
   if (parsed.isErr()) {
     const e = parsed.error;
