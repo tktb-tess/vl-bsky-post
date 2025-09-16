@@ -91,12 +91,6 @@ export const zpdicResponseSchema = v.object({
   total: v.pipe(v.number(), v.integer()),
 });
 
-const zpdicWordResponseSchema = v.object({
-  word: wordWithExamplesSchema,
-});
-
-export type ZpDICWordResponse = v.InferOutput<typeof zpdicWordResponseSchema>;
-
 export type ZpDICWordsResponse = v.InferOutput<typeof zpdicResponseSchema>;
 
 export const fetchZpdicWords = (

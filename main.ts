@@ -22,25 +22,25 @@ const runtime = Deno.env.get('RUNTIME');
 if (!password) {
   const err = MiscError.from('EnvVariableError', `Couldn't get BSKY_PASSWORD`);
   console.error(err);
-  throw err;
+  Deno.exit(-1);
 }
 
 if (!zpdicApiKey) {
   const err = MiscError.from('EnvVariableError', `Couldn't get ZPDIC_API_KEY`);
   console.error(err);
-  throw err;
+  Deno.exit(-1);
 }
 
 if (!runtime) {
   const err = MiscError.from('EnvVariableError', `Couldn't get RUNTIME`);
   console.error(err);
-  throw err;
+  Deno.exit(-1);
 }
 
 if (runtime !== 'local' && runtime !== 'deno-deploy') {
   const err = MiscError.from('EnvVariableError', `RUNTIME is invalid`);
   console.error(err);
-  throw err;
+  Deno.exit(-1);
 }
 
 const main = async () => {
@@ -84,7 +84,10 @@ const main = async () => {
 
       const task1 = taskf1().match(
         () => console.log('Post data is successfully stored'),
-        (e) => console.error(e)
+        (e) => {
+          console.error(e);
+          Deno.exit(-1);
+        }
       );
 
       const { entry, link, formattedStr } = formatted;
@@ -97,7 +100,10 @@ const main = async () => {
           () =>
             console.log(runtime, `: Successfully fetched. post:\n`, formatted),
 
-          (e) => console.error(e)
+          (e) => {
+            console.error(e);
+            Deno.exit(-1);
+          }
         );
 
       const results = await Promise.allSettled([task1, task2]);
@@ -115,48 +121,61 @@ if (runtime === 'local') {
 
 Deno.cron('Post to Bluesky', '0 * * * *', () => main());
 
-Deno.serve(async () => {
-  const jsonHeader = {
-    'Content-Type': 'application/json; charset=utf-8',
-  } as const;
+export default {
+  async fetch() {
+    const jsonHeader = {
+      'Content-Type': 'application/json; charset=utf-8',
+    } as const;
 
-  const htmlHeader = {
-    'Content-Type': 'text/html; charset=utf-8',
-  } as const;
+    const htmlHeader = {
+      'Content-Type': 'text/html; charset=utf-8',
+    } as const;
 
-  const kv = await Deno.openKv();
-  const parsed = safeParseToResult(
-    v.string(),
-    (await kv.get(['post data'])).value
-  );
+    const kv = await Deno.openKv();
+    const parsed = safeParseToResult(
+      v.string(),
+      (await kv.get(['post data'])).value
+    );
 
-  if (parsed.isErr()) {
-    const e = parsed.error;
-    console.error(e);
-    return new Response(JSON.stringify(e), { headers: jsonHeader });
-  }
+    if (parsed.isErr()) {
+      const e = parsed.error;
+      console.error(e);
+      return new Response(JSON.stringify(e), { headers: jsonHeader });
+    }
 
-  const postR = safeParseToResult(postDataSchema, JSON.parse(parsed.value));
+    const postR = safeParseToResult(postDataSchema, JSON.parse(parsed.value));
 
-  if (postR.isErr()) {
-    const e = postR.error;
-    console.error(e);
-    return new Response(JSON.stringify(e), { headers: jsonHeader });
-  }
+    if (postR.isErr()) {
+      const e = postR.error;
+      console.error(e);
+      return new Response(JSON.stringify(e), { headers: jsonHeader });
+    }
 
-  const post = postR.value;
+    const post = postR.value;
 
-  const honbun = post.formattedStr
-    .split('\n')
-    .map((p) => `<p>${p}</p>`)
-    .join('');
+    const honbun = post.formattedStr
+      .split('\n')
+      .map((p) => `<p>${p}</p>`)
+      .join('');
 
-  const link = `<p><a href=${post.link}>ZpDIC Online</a></p>`;
+    const link = `<p><a href=${post.link}>ZpDIC Online</a></p>`;
+    const style = `<style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Inter', 'Arial', 'Helvetica Neue', 'Noto Sans JP', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      gap: .5rem;
+    } 
+    </style>`;
+    const body = `<html><head>${style}<title>Hit vässenzländisķ vord</title></head><body>${honbun}${link}</body></html>`;
 
-  const style = `<style>body {font-family: 'Inter', 'Arial', 'Helvetica Neue', 'Noto Sans JP', sans-serif;} .ipa {font-family: 'Charis SIL', 'Times New Roman', serif;}</style>`;
-  
-
-  const body = `${style}${honbun}${link}`;
-
-  return new Response(body, { headers: htmlHeader });
-});
+    return new Response(body, { headers: htmlHeader });
+  },
+} satisfies Deno.ServeDefaultExport;
