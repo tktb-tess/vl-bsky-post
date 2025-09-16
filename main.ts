@@ -168,6 +168,7 @@ export default {
     body {
       font-family: 'Inter', 'Arial', 'Helvetica Neue', 'Noto Sans JP', sans-serif;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       height: 100vh;
