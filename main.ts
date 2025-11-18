@@ -53,7 +53,7 @@ const main = async () => {
 
   if (formatResult.isErr()) {
     console.error(formatResult.error);
-    Deno.exit(1);
+    return;
   }
 
   const formatted = formatResult.value;
@@ -82,7 +82,7 @@ const main = async () => {
         () => console.log('Post data is successfully stored'),
         (e) => {
           console.error(e);
-          Deno.exit(1);
+          return;
         }
       );
 
@@ -98,7 +98,7 @@ const main = async () => {
 
           (e) => {
             console.error(e);
-            Deno.exit(1);
+            return;
           }
         );
 
