@@ -1,6 +1,5 @@
 import '@std/dotenv/load';
 import { getTotalWords, fetchZpdicWord } from './mod/zpdic-api.ts';
-
 import { createSession, createRecord } from './mod/bluesky-api.ts';
 import { ResultAsync } from 'neverthrow';
 import {
@@ -8,12 +7,9 @@ import {
   formatWord,
   postDataSchema,
   safeParseToResult,
+  getRandomInt,
 } from './mod/util.ts';
 import * as v from '@valibot/valibot';
-
-const getRandomInt = (min: number, max: number) => {
-  return Math.floor(Math.random() * (max - min) + min);
-};
 
 const password = Deno.env.get('BSKY_PASSWORD');
 const zpdicApiKey = Deno.env.get('ZPDIC_API_KEY');
@@ -22,25 +18,25 @@ const runtime = Deno.env.get('RUNTIME');
 if (!password) {
   const err = MiscError.from('EnvVariableError', `Couldn't get BSKY_PASSWORD`);
   console.error(err);
-  Deno.exit(-1);
+  Deno.exit(1);
 }
 
 if (!zpdicApiKey) {
   const err = MiscError.from('EnvVariableError', `Couldn't get ZPDIC_API_KEY`);
   console.error(err);
-  Deno.exit(-1);
+  Deno.exit(1);
 }
 
 if (!runtime) {
   const err = MiscError.from('EnvVariableError', `Couldn't get RUNTIME`);
   console.error(err);
-  Deno.exit(-1);
+  Deno.exit(1);
 }
 
 if (runtime !== 'local' && runtime !== 'deno-deploy') {
   const err = MiscError.from('EnvVariableError', `RUNTIME is invalid`);
   console.error(err);
-  Deno.exit(-1);
+  Deno.exit(1);
 }
 
 const main = async () => {
@@ -57,7 +53,7 @@ const main = async () => {
 
   if (formatResult.isErr()) {
     console.error(formatResult.error);
-    throw formatResult.error;
+    Deno.exit(1);
   }
 
   const formatted = formatResult.value;
@@ -86,7 +82,7 @@ const main = async () => {
         () => console.log('Post data is successfully stored'),
         (e) => {
           console.error(e);
-          Deno.exit(-1);
+          Deno.exit(1);
         }
       );
 
@@ -102,7 +98,7 @@ const main = async () => {
 
           (e) => {
             console.error(e);
-            Deno.exit(-1);
+            Deno.exit(1);
           }
         );
 

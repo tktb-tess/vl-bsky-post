@@ -7,6 +7,8 @@ import {
 } from './util.ts';
 import { err, ok, ResultAsync } from 'neverthrow';
 
+/* schemas */
+
 const obj_id_brand = Symbol('object-id');
 
 const objectIdSchema = v.pipe(v.string(), v.brand(obj_id_brand));
@@ -92,6 +94,8 @@ export const zpdicResponseSchema = v.object({
 });
 
 export type ZpDICWordsResponse = v.InferOutput<typeof zpdicResponseSchema>;
+
+/* functions */
 
 export const fetchZpdicWords = (
   apiKey: string,

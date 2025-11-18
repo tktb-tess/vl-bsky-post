@@ -1,20 +1,22 @@
 import { ok, err, okAsync, errAsync, Result, ResultAsync } from 'neverthrow';
 import * as v from '@valibot/valibot';
-import { WordWithExamples } from "./zpdic-api.ts";
+import { WordWithExamples } from './zpdic-api.ts';
 
 const http_err_brand = Symbol('http-error');
 
 type HttpError = {
   readonly status: number;
   readonly statusText: string;
+  readonly stack?: string;
   readonly [http_err_brand]: typeof http_err_brand;
 };
 
 const HttpError = {
-  from: (status: number, statusText: string): HttpError => {
+  from: (status: number, statusText: string, stack?: string): HttpError => {
     return {
       status,
       statusText,
+      stack
     } as HttpError;
   },
 };
@@ -23,24 +25,27 @@ export { HttpError };
 
 const misc_err_brand = Symbol('misc-error');
 
-type MiscError<T = unknown> = {
+type MiscError = {
   readonly name: string;
   readonly message: string;
-  readonly cause?: T;
-  readonly [misc_err_brand]: typeof misc_err_brand;
+  readonly cause?: unknown;
+  readonly stack?: string;
+  readonly [misc_err_brand]: true;
 };
 
 const MiscError = {
-  from: <T = unknown>(
+  from: (
     name: string,
     message: string,
-    cause?: T
-  ): MiscError<T> => {
+    cause?: unknown,
+    stack?: unknown
+  ): MiscError => {
     return {
       name,
       message,
       cause,
-    } as MiscError<T>;
+      stack,
+    } as MiscError;
   },
 };
 
@@ -72,7 +77,8 @@ export const fetchToResult = (
 
   return respResult.andThen((resp) => {
     if (!resp.ok) {
-      return errAsync(HttpError.from(resp.status, resp.statusText));
+      const stack = new Error("").stack;
+      return errAsync(HttpError.from(resp.status, resp.statusText, stack));
     }
     return okAsync(resp);
   });
@@ -82,7 +88,7 @@ export const postDataSchema = v.object({
   entry: v.string(),
   link: v.pipe(v.string(), v.url()),
   formattedStr: v.string(),
-})
+});
 
 export type PostData = v.InferOutput<typeof postDataSchema>;
 
@@ -141,4 +147,8 @@ ${etymology}`;
     link,
     entry,
   };
+};
+
+export const getRandomInt = (min: number, max: number) => {
+  return Math.floor(Math.random() * (max - min) + min);
 };
