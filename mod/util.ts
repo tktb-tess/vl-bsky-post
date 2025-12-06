@@ -116,7 +116,7 @@ export const formatWord = (word: WordWithExamples): PostData => {
     const _desc = word.informations.find(({ title }) => title === '説明');
     if (!_desc || !_desc.text) return '';
     const str = `〜${_desc.title}〜
-${_desc.text.replaceAll(/(?:_|\\|[^\\]\*)/g, '')}`;
+${_desc.text.replace(/_|\\|([^\\])\*/g, '$1')}`;
     return str;
   })();
 
@@ -124,7 +124,7 @@ ${_desc.text.replaceAll(/(?:_|\\|[^\\]\*)/g, '')}`;
     const _ety = word.informations.find(({ title }) => title === '語源');
     if (!_ety || !_ety.text) return '';
     const str = `〜${_ety.title}〜
-${_ety.text.replace(/(?:_|\\|[^\\]\*)/g, '')}`;
+${_ety.text.replace(/_|\\|([^\\])\*/g, '$1')}`;
     return str;
   })();
 
