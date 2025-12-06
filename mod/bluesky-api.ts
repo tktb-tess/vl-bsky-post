@@ -1,5 +1,5 @@
 import * as v from '@valibot/valibot';
-import { fetchResult, toJsonResult, safeParseResult } from './util.ts';
+import { fetchResult, safeParseResult, toJsonResult } from './util.ts';
 
 export const sessionSchema = v.object({
   accessJwt: v.string(),

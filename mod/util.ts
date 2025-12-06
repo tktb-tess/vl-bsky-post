@@ -1,4 +1,4 @@
-import { ok, err, okAsync, errAsync, ResultAsync } from 'neverthrow';
+import { err, errAsync, ok, okAsync, ResultAsync } from 'neverthrow';
 import * as v from '@valibot/valibot';
 import { WordWithExamples } from './zpdic-api.ts';
 import { NamedError } from './err.ts';

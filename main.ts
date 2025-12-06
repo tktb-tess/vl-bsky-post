@@ -1,12 +1,12 @@
 import '@std/dotenv/load';
-import { getTotalWords, fetchZpdicWord } from './mod/zpdic-api.ts';
-import { createSession, createRecord } from './mod/bluesky-api.ts';
+import { fetchZpdicWord, getTotalWords } from './mod/zpdic-api.ts';
+import { createRecord, createSession } from './mod/bluesky-api.ts';
 import { ResultAsync } from 'neverthrow';
 import {
   formatWord,
+  getRandomInt,
   postDataSchema,
   safeParseResult,
-  getRandomInt,
 } from './mod/util.ts';
 import { NamedError } from './mod/err.ts';
 import * as v from '@valibot/valibot';
@@ -97,7 +97,6 @@ const main = async () => {
         .match(
           () =>
             console.log(runtime, `: Successfully fetched.\npost:`, formatted),
-
           (e) => {
             console.error(e);
             return;

@@ -1,9 +1,5 @@
 import * as v from '@valibot/valibot';
-import {
-  fetchResult,
-  safeParseResult,
-  toJsonResult,
-} from './util.ts';
+import { fetchResult, safeParseResult, toJsonResult } from './util.ts';
 import { NamedError } from './err.ts';
 import { err, ok } from 'neverthrow';
 
