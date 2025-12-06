@@ -31,7 +31,10 @@ export type Session = v.InferOutput<typeof sessionSchema>;
 export const createSession = (
   identifier: string,
   password: string
-): ResultAsync<Session, MiscError | HttpError | v.ValiError<typeof sessionSchema>> => {
+): ResultAsync<
+  Session,
+  MiscError | HttpError | v.ValiError<typeof sessionSchema>
+> => {
   const endpoint = 'https://bsky.social/xrpc/com.atproto.server.createSession';
 
   const payload = {
@@ -47,20 +50,17 @@ export const createSession = (
     body: JSON.stringify(payload),
   });
 
-  return resp.andThen((res) => {
-    const json = ResultAsync.fromPromise<unknown, MiscError>(
-      res.json(),
-      (e) => {
+  return resp
+    .andThen((res) => {
+      return ResultAsync.fromPromise<unknown, MiscError>(res.json(), (e) => {
         if (e instanceof Error) {
           return MiscError.from(e.name, e.message, e);
         } else {
           return MiscError.from('UnidentifiedError', 'Unidentified error', e);
         }
-      }
-    );
-
-    return json.andThen((j) => safeParseToResult(sessionSchema, j));
-  });
+      });
+    })
+    .andThen((j) => safeParseToResult(sessionSchema, j));
 };
 
 export const createRecord = (
@@ -99,17 +99,12 @@ export const createRecord = (
   });
 
   return resp.andThen((res) => {
-    const json = ResultAsync.fromPromise<unknown, MiscError>(
-      res.json(),
-      (e) => {
-        if (e instanceof Error) {
-          return MiscError.from(e.name, e.message, e);
-        } else {
-          return MiscError.from('UnidentifiedError', 'Unidentified error', e);
-        }
+    return ResultAsync.fromPromise<unknown, MiscError>(res.json(), (e) => {
+      if (e instanceof Error) {
+        return MiscError.from(e.name, e.message, e);
+      } else {
+        return MiscError.from('UnidentifiedError', 'Unidentified error', e);
       }
-    );
-
-    return json;
+    });
   });
 };

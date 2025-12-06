@@ -2,15 +2,15 @@
   "version": "5",
   "specifiers": {
     "jsr:@std/dotenv@~0.225.5": "0.225.5",
-    "jsr:@valibot/valibot@^1.1.0": "1.1.0",
+    "jsr:@valibot/valibot@^1.2.0": "1.2.0",
     "npm:neverthrow@^8.2.0": "8.2.0"
   },
   "jsr": {
     "@std/dotenv@0.225.5": {
       "integrity": "9ce6f9d0ec3311f74a32535aa1b8c62ed88b1ab91b7f0815797d77a6f60c922f"
     },
-    "@valibot/valibot@1.1.0": {
-      "integrity": "2617f02b532011b8140926899d420a3e1bbb0fcb7cdf8e7b669df89e7edd7f5f"
+    "@valibot/valibot@1.2.0": {
+      "integrity": "61c118a4d027ed55912caf381c78f0a178f335f46ad0c4bcb136498dc1ef2285"
     }
   },
   "npm": {
@@ -29,7 +29,7 @@
   "workspace": {
     "dependencies": [
       "jsr:@std/dotenv@~0.225.5",
-      "jsr:@valibot/valibot@^1.1.0",
+      "jsr:@valibot/valibot@^1.2.0",
       "npm:neverthrow@^8.2.0"
     ]
   }

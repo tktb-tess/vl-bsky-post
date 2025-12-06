@@ -15,7 +15,7 @@ class NamedError<TName extends string> extends Error {
 
   toJSON() {
     const { errName, message, stack } = this;
-    
+
     const getCause = () => {
       const cause = this.cause;
 
