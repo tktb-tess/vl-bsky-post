@@ -8,7 +8,7 @@ type HttpError = {
   readonly status: number;
   readonly statusText: string;
   readonly stack?: string;
-  readonly [http_err_brand]: typeof http_err_brand;
+  readonly [http_err_brand]: true;
 };
 
 const HttpError = {
@@ -16,7 +16,7 @@ const HttpError = {
     return {
       status,
       statusText,
-      stack
+      stack,
     } as HttpError;
   },
 };
@@ -77,7 +77,7 @@ export const fetchToResult = (
 
   return respResult.andThen((resp) => {
     if (!resp.ok) {
-      const stack = new Error("").stack;
+      const stack = new Error('').stack;
       return errAsync(HttpError.from(resp.status, resp.statusText, stack));
     }
     return okAsync(resp);
