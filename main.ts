@@ -1,14 +1,14 @@
 import '@std/dotenv/load';
-import { getTotalWords, fetchZpdicWord } from './mod/zpdic-api.ts';
-import { createSession, createRecord } from './mod/bluesky-api.ts';
+import { fetchZpdicWord, getTotalWords } from './mod/zpdic-api.ts';
+import { createRecord, createSession } from './mod/bluesky-api.ts';
 import { ResultAsync } from 'neverthrow';
 import {
-  MiscError,
   formatWord,
-  postDataSchema,
-  safeParseToResult,
   getRandomInt,
+  postDataSchema,
+  safeParseResult,
 } from './mod/util.ts';
+import { NamedError } from './mod/err.ts';
 import * as v from '@valibot/valibot';
 
 const password = Deno.env.get('BSKY_PASSWORD');
@@ -16,25 +16,25 @@ const zpdicApiKey = Deno.env.get('ZPDIC_API_KEY');
 const runtime = Deno.env.get('RUNTIME');
 
 if (!password) {
-  const err = MiscError.from('EnvVariableError', `Couldn't get BSKY_PASSWORD`);
+  const err = new NamedError('EnvVariableError', `Couldn't get BSKY_PASSWORD`);
   console.error(err);
   Deno.exit(1);
 }
 
 if (!zpdicApiKey) {
-  const err = MiscError.from('EnvVariableError', `Couldn't get ZPDIC_API_KEY`);
+  const err = new NamedError('EnvVariableError', `Couldn't get ZPDIC_API_KEY`);
   console.error(err);
   Deno.exit(1);
 }
 
 if (!runtime) {
-  const err = MiscError.from('EnvVariableError', `Couldn't get RUNTIME`);
+  const err = new NamedError('EnvVariableError', `Couldn't get RUNTIME`);
   console.error(err);
   Deno.exit(1);
 }
 
 if (runtime !== 'local' && runtime !== 'deno-deploy') {
-  const err = MiscError.from('EnvVariableError', `RUNTIME is invalid`);
+  const err = new NamedError('EnvVariableError', `RUNTIME is invalid`);
   console.error(err);
   Deno.exit(1);
 }
@@ -60,7 +60,7 @@ const main = async () => {
 
   switch (runtime) {
     case 'local': {
-      console.log(runtime, `: Successfully fetched. post:\n`, formatted);
+      console.log(runtime, `: Successfully fetched.\npost:`, formatted);
       return;
     }
     case 'deno-deploy': {
@@ -71,9 +71,11 @@ const main = async () => {
         },
         (e) => {
           if (e instanceof Error) {
-            return MiscError.from(e.name, e.message, e);
+            return new NamedError('KVError', e.message, { cause: e.cause });
           } else {
-            return MiscError.from('UnidentifiedError', 'Unidentified error', e);
+            return new NamedError('KVError', 'Unidentified error', {
+              cause: e,
+            });
           }
         }
       );
@@ -94,8 +96,7 @@ const main = async () => {
         )
         .match(
           () =>
-            console.log(runtime, `: Successfully fetched. post:\n`, formatted),
-
+            console.log(runtime, `: Successfully fetched.\npost:`, formatted),
           (e) => {
             console.error(e);
             return;
@@ -128,7 +129,7 @@ export default {
     } as const;
 
     const kv = await Deno.openKv();
-    const parsed = safeParseToResult(
+    const parsed = safeParseResult(
       v.string(),
       (await kv.get(['post data'])).value
     );
@@ -139,7 +140,7 @@ export default {
       return new Response(JSON.stringify(e), { headers: jsonHeader });
     }
 
-    const postR = safeParseToResult(postDataSchema, JSON.parse(parsed.value));
+    const postR = safeParseResult(postDataSchema, JSON.parse(parsed.value));
 
     if (postR.isErr()) {
       const e = postR.error;

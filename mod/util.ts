@@ -1,63 +1,49 @@
-import { ok, err, okAsync, errAsync, Result, ResultAsync } from 'neverthrow';
+import { err, errAsync, ok, okAsync, ResultAsync } from 'neverthrow';
 import * as v from '@valibot/valibot';
 import { WordWithExamples } from './zpdic-api.ts';
+import { NamedError } from './err.ts';
 
-const http_err_brand = Symbol('http-error');
+export const fetchResult = (url: string | URL, init?: RequestInit) => {
+  const respResult = ResultAsync.fromPromise(fetch(url, init), (e) => {
+    const message = `500 ${
+      e instanceof Error ? e.message : 'Unidentified Error'
+    }`;
+    return new NamedError('HttpError', message);
+  });
 
-type HttpError = {
-  readonly status: number;
-  readonly statusText: string;
-  readonly stack?: string;
-  readonly [http_err_brand]: true;
+  return respResult.andThen((resp) => {
+    if (!resp.ok) {
+      return errAsync(
+        new NamedError('HttpError', `${resp.status} ${resp.statusText}`)
+      );
+    }
+    return okAsync(resp);
+  });
 };
 
-const HttpError = {
-  from: (status: number, statusText: string, stack?: string): HttpError => {
-    return {
-      status,
-      statusText,
-      stack,
-    } as HttpError;
-  },
-};
+export const toJsonResult = (res: Response) =>
+  ResultAsync.fromPromise<unknown, NamedError<'JsonConvertError'>>(
+    res.json(),
+    (e) => {
+      if (e instanceof Error) {
+        return new NamedError('JsonConvertError', e.message, {
+          cause: e.cause,
+        });
+      } else {
+        return new NamedError('JsonConvertError', 'unidentified error', {
+          cause: e,
+        });
+      }
+    }
+  );
 
-export { HttpError };
+type BaseSchema = v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>;
 
-const misc_err_brand = Symbol('misc-error');
-
-type MiscError = {
-  readonly name: string;
-  readonly message: string;
-  readonly cause?: unknown;
-  readonly stack?: string;
-  readonly [misc_err_brand]: true;
-};
-
-const MiscError = {
-  from: (
-    name: string,
-    message: string,
-    cause?: unknown,
-    stack?: unknown
-  ): MiscError => {
-    return {
-      name,
-      message,
-      cause,
-      stack,
-    } as MiscError;
-  },
-};
-
-export { MiscError };
-
-export const safeParseToResult = <
-  TSchema extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>
->(
+export const safeParseResult = <TSchema extends BaseSchema>(
   schema: TSchema,
   value: unknown,
   config?: v.Config<v.InferIssue<TSchema>>
-): Result<v.InferOutput<TSchema>, v.ValiError<TSchema>> => {
+) => {
   const result = v.safeParse(schema, value, config);
 
   if (!result.success) {
@@ -65,23 +51,6 @@ export const safeParseToResult = <
   }
 
   return ok(result.output);
-};
-
-export const fetchToResult = (
-  url: string | URL,
-  init?: RequestInit
-): ResultAsync<Response, HttpError> => {
-  const respResult = ResultAsync.fromPromise(fetch(url, init), (e) =>
-    HttpError.from(500, e instanceof Error ? e.message : `Unidentified error`)
-  );
-
-  return respResult.andThen((resp) => {
-    if (!resp.ok) {
-      const stack = new Error('').stack;
-      return errAsync(HttpError.from(resp.status, resp.statusText, stack));
-    }
-    return okAsync(resp);
-  });
 };
 
 export const postDataSchema = v.object({
