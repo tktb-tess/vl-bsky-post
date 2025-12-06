@@ -8,7 +8,7 @@ class NamedError<TName extends string> extends Error {
   constructor(
     public readonly errName: TName,
     message: string,
-    options: ErrorOptions
+    options?: ErrorOptions
   ) {
     super(message, options);
   }

@@ -1,11 +1,5 @@
-import { ResultAsync } from 'neverthrow';
 import * as v from '@valibot/valibot';
-import {
-  fetchToResult,
-  HttpError,
-  MiscError,
-  safeParseToResult,
-} from './util.ts';
+import { fetchResult, toJsonResult, safeParseResult } from './util.ts';
 
 export const sessionSchema = v.object({
   accessJwt: v.string(),
@@ -28,13 +22,7 @@ export const sessionSchema = v.object({
 
 export type Session = v.InferOutput<typeof sessionSchema>;
 
-export const createSession = (
-  identifier: string,
-  password: string
-): ResultAsync<
-  Session,
-  MiscError | HttpError | v.ValiError<typeof sessionSchema>
-> => {
+export const createSession = (identifier: string, password: string) => {
   const endpoint = 'https://bsky.social/xrpc/com.atproto.server.createSession';
 
   const payload = {
@@ -42,25 +30,15 @@ export const createSession = (
     password,
   };
 
-  const resp = fetchToResult(endpoint, {
+  return fetchResult(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
-  });
-
-  return resp
-    .andThen((res) => {
-      return ResultAsync.fromPromise<unknown, MiscError>(res.json(), (e) => {
-        if (e instanceof Error) {
-          return MiscError.from(e.name, e.message, e);
-        } else {
-          return MiscError.from('UnidentifiedError', 'Unidentified error', e);
-        }
-      });
-    })
-    .andThen((j) => safeParseToResult(sessionSchema, j));
+  })
+    .andThen(toJsonResult)
+    .andThen((j) => safeParseResult(sessionSchema, j));
 };
 
 export const createRecord = (
@@ -69,7 +47,7 @@ export const createRecord = (
   content: string,
   link: string,
   entry: string
-): ResultAsync<unknown, HttpError | MiscError> => {
+) => {
   const endpoint = 'https://bsky.social/xrpc/com.atproto.repo.createRecord';
 
   const payload = {
@@ -89,22 +67,12 @@ export const createRecord = (
     },
   };
 
-  const resp = fetchToResult(endpoint, {
+  return fetchResult(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${accessJwt}`,
     },
     body: JSON.stringify(payload),
-  });
-
-  return resp.andThen((res) => {
-    return ResultAsync.fromPromise<unknown, MiscError>(res.json(), (e) => {
-      if (e instanceof Error) {
-        return MiscError.from(e.name, e.message, e);
-      } else {
-        return MiscError.from('UnidentifiedError', 'Unidentified error', e);
-      }
-    });
-  });
+  }).andThen(toJsonResult);
 };

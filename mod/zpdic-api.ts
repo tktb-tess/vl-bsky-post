@@ -1,11 +1,11 @@
 import * as v from '@valibot/valibot';
 import {
-  fetchToResult,
-  HttpError,
-  MiscError,
-  safeParseToResult,
+  fetchResult,
+  safeParseResult,
+  toJsonResult,
 } from './util.ts';
-import { err, ok, ResultAsync } from 'neverthrow';
+import { NamedError } from './err.ts';
+import { err, ok } from 'neverthrow';
 
 /* schemas */
 
@@ -101,41 +101,22 @@ export const fetchZpdicWords = (
   apiKey: string,
   query: string,
   dicID: string
-): ResultAsync<
-  ZpDICWordsResponse,
-  v.ValiError<typeof zpdicResponseSchema> | HttpError | MiscError
-> => {
+) => {
   const url = `https://zpdic.ziphil.com/api/v0/dictionary/${dicID}/words${query}`;
 
-  const resp = fetchToResult(url, {
+  const resp = fetchResult(url, {
     method: 'GET',
     headers: {
       'X-Api-Key': apiKey,
     },
   });
 
-  return resp.andThen((r) => {
-    const json = ResultAsync.fromPromise<unknown, MiscError>(r.json(), (e) => {
-      if (e instanceof Error) {
-        return MiscError.from(e.name, e.message, e);
-      } else if (e instanceof DOMException) {
-        return MiscError.from(e.name, e.message, e);
-      } else {
-        return MiscError.from('UnidentifiedError', 'Unidentified error', e);
-      }
-    });
-
-    return json.andThen((j) => safeParseToResult(zpdicResponseSchema, j));
-  });
+  return resp
+    .andThen(toJsonResult)
+    .andThen((j) => safeParseResult(zpdicResponseSchema, j));
 };
 
-export const getTotalWords = (
-  apiKey: string,
-  dicID: string
-): ResultAsync<
-  number,
-  v.ValiError<typeof zpdicResponseSchema> | HttpError | MiscError
-> => {
+export const getTotalWords = (apiKey: string, dicID: string) => {
   const result = fetchZpdicWords(apiKey, '?text=', dicID);
 
   return result.map(({ total }) => total);
@@ -145,15 +126,12 @@ export const fetchZpdicWord = (
   apiKey: string,
   index: number,
   dicID: string
-): ResultAsync<
-  WordWithExamples,
-  v.ValiError<typeof zpdicResponseSchema> | HttpError | MiscError
-> => {
+) => {
   const res = fetchZpdicWords(apiKey, `?text=&skip=${index}&limit=1`, dicID);
 
   return res.andThen(({ words }) => {
     const word = words.at(0);
-    if (!word) return err(MiscError.from('FetchError', 'No Words are found'));
+    if (!word) return err(new NamedError('FetchError', 'No Words are found'));
     return ok(word);
   });
 };
