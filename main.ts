@@ -129,34 +129,6 @@ export default {
       'Content-Type': 'text/html; charset=utf-8',
     } as const;
 
-    const kv = await Deno.openKv();
-    const parsed = safeParseResult(
-      v.string(),
-      (await kv.get(['post data'])).value,
-    );
-
-    if (parsed.isErr()) {
-      const e = parsed.error;
-      console.error(e);
-      return new Response(JSON.stringify(e), { headers: jsonHeader });
-    }
-
-    const postR = safeParseResult(postDataSchema, JSON.parse(parsed.value));
-
-    if (postR.isErr()) {
-      const e = postR.error;
-      console.error(e);
-      return new Response(JSON.stringify(e), { headers: jsonHeader });
-    }
-
-    const post = postR.value;
-
-    const honbun = post.formattedStr
-      .split('\n')
-      .map((p) => `<p>${p}</p>`)
-      .join('');
-
-    const link = `<p><a href=${post.link}>ZpDIC Online</a></p>`;
     const style = `<style>
     * {
       margin: 0;
@@ -173,6 +145,44 @@ export default {
       gap: .5rem;
     } 
     </style>`;
+
+    const kv = await Deno.openKv();
+    const value = (await kv.get(['post data'])).value;
+
+    if (value == null) {
+      const body = `<html><head>${style}<title>Hit vässenzländisķ vord</title></head><body>Empty</body></html>`;
+      return new Response(body, { headers: htmlHeader });
+    }
+
+    const parsed = safeParseResult(v.string(), value);
+
+    if (parsed.isErr()) {
+      const e = parsed.error;
+      console.error(e);
+      const body = JSON.stringify({
+        message: 'Failed to get valid data from KV',
+      });
+      return new Response(body, { headers: jsonHeader });
+    }
+
+    const postR = safeParseResult(postDataSchema, JSON.parse(parsed.value));
+
+    if (postR.isErr()) {
+      const e = postR.error;
+      console.error(e);
+      const body = JSON.stringify({ message: 'Failed to parse post data' });
+      return new Response(body, { headers: jsonHeader });
+    }
+
+    const post = postR.value;
+
+    const honbun = post.formattedStr
+      .split('\n')
+      .map((p) => `<p>${p}</p>`)
+      .join('');
+
+    const link = `<p><a href=${post.link}>ZpDIC Online</a></p>`;
+
     const body = `<html><head>${style}<title>Hit vässenzländisķ vord</title></head><body>${honbun}${link}</body></html>`;
 
     return new Response(body, { headers: htmlHeader });

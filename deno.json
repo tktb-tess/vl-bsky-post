@@ -4,8 +4,8 @@
     "start": "deno serve --allow-read --allow-env --allow-net --unstable-cron --unstable-kv main.ts"
   },
   "imports": {
-    "@std/dotenv": "jsr:@std/dotenv@^0.225.5",
-    "@valibot/valibot": "jsr:@valibot/valibot@^1.2.0",
+    "@std/dotenv": "jsr:@std/dotenv@^0.225.6",
+    "@valibot/valibot": "jsr:@valibot/valibot@^1.3.1",
     "neverthrow": "npm:neverthrow@^8.2.0"
   }
 }
