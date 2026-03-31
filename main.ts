@@ -7,6 +7,7 @@ import {
   getRandomInt,
   postDataSchema,
   safeParseResult,
+  createErrHandler,
 } from './mod/util.ts';
 import { NamedError } from './mod/err.ts';
 import * as v from '@valibot/valibot';
@@ -16,25 +17,31 @@ const zpdicApiKey = Deno.env.get('ZPDIC_API_KEY');
 const runtime = Deno.env.get('RUNTIME');
 
 if (!password) {
-  const err = new NamedError('EnvVariableError', `Couldn't get BSKY_PASSWORD`);
+  const err = new NamedError(
+    'EnvVariableError',
+    `Couldn't get env 'BSKY_PASSWORD'`,
+  );
   console.error(err);
   Deno.exit(1);
 }
 
 if (!zpdicApiKey) {
-  const err = new NamedError('EnvVariableError', `Couldn't get ZPDIC_API_KEY`);
+  const err = new NamedError(
+    'EnvVariableError',
+    `Couldn't get env 'ZPDIC_API_KEY'`,
+  );
   console.error(err);
   Deno.exit(1);
 }
 
 if (!runtime) {
-  const err = new NamedError('EnvVariableError', `Couldn't get RUNTIME`);
+  const err = new NamedError('EnvVariableError', `Couldn't get env 'RUNTIME'`);
   console.error(err);
   Deno.exit(1);
 }
 
 if (runtime !== 'local' && runtime !== 'deno-deploy') {
-  const err = new NamedError('EnvVariableError', `RUNTIME is invalid`);
+  const err = new NamedError('EnvVariableError', `env 'RUNTIME' is invalid`);
   console.error(err);
   Deno.exit(1);
 }
@@ -53,7 +60,7 @@ const main = async () => {
 
   if (formatResult.isErr()) {
     console.error(formatResult.error);
-    return;
+    Deno.exit(1);
   }
 
   const formatted = formatResult.value;
@@ -69,30 +76,22 @@ const main = async () => {
           const kv = await Deno.openKv();
           await kv.set(['post data'], JSON.stringify(formatted));
         },
-        (e) => {
-          if (e instanceof Error) {
-            return new NamedError('KVError', e.message, { cause: e.cause });
-          } else {
-            return new NamedError('KVError', 'Unidentified error', {
-              cause: e,
-            });
-          }
-        }
+        createErrHandler('KVError', 'Failed to store data'),
       );
 
       const task1 = taskf1().match(
         () => console.log('Post data is successfully stored'),
         (e) => {
           console.error(e);
-          return;
-        }
+          Deno.exit(1);
+        },
       );
 
       const { entry, link, formattedStr } = formatted;
 
       const task2 = createSession(identifier, password)
         .andThen(({ did, accessJwt }) =>
-          createRecord(did, accessJwt, formattedStr, link, entry)
+          createRecord(did, accessJwt, formattedStr, link, entry),
         )
         .match(
           () =>
@@ -100,7 +99,7 @@ const main = async () => {
           (e) => {
             console.error(e);
             return;
-          }
+          },
         );
 
       const results = await Promise.allSettled([task1, task2]);
@@ -116,7 +115,9 @@ if (runtime === 'local') {
   await main();
 }
 
-Deno.cron('Post to Bluesky', '0 * * * *', () => main());
+if (runtime === 'deno-deploy') {
+  Deno.cron('Post to Bluesky', '0 * * * *', () => main());
+}
 
 export default {
   async fetch() {
@@ -131,7 +132,7 @@ export default {
     const kv = await Deno.openKv();
     const parsed = safeParseResult(
       v.string(),
-      (await kv.get(['post data'])).value
+      (await kv.get(['post data'])).value,
     );
 
     if (parsed.isErr()) {
