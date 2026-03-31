@@ -129,7 +129,8 @@ export default {
       'Content-Type': 'text/html; charset=utf-8',
     } as const;
 
-    const style = `<style>
+    const formatHTMLBody = (doc: string) => {
+      const style = `<style>
     * {
       margin: 0;
       padding: 0;
@@ -146,11 +147,25 @@ export default {
     } 
     </style>`;
 
+      return `<!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width,initial-scale=1" />
+          ${style}
+          <title>Hit vässenzländisķ vord</title>
+        </head>
+        <body>
+          ${doc}
+        </body>
+      </html>`;
+    };
+
     const kv = await Deno.openKv();
     const value = (await kv.get(['post data'])).value;
 
     if (value == null) {
-      const body = `<html><head>${style}<title>Hit vässenzländisķ vord</title></head><body>Empty</body></html>`;
+      const body = formatHTMLBody('Empty');
       return new Response(body, { headers: htmlHeader });
     }
 
@@ -183,7 +198,7 @@ export default {
 
     const link = `<p><a href=${post.link}>ZpDIC Online</a></p>`;
 
-    const body = `<html><head>${style}<title>Hit vässenzländisķ vord</title></head><body>${honbun}${link}</body></html>`;
+    const body = formatHTMLBody(`${honbun}${link}`);
 
     return new Response(body, { headers: htmlHeader });
   },
