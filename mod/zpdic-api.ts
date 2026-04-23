@@ -53,13 +53,13 @@ const exampleSchema = v.object({
   words: v.array(
     v.object({
       number: v.pipe(v.number(), v.integer()),
-    })
+    }),
   ),
   offer: v.nullable(
     v.object({
       catalog: v.string(),
       number: v.pipe(v.number(), v.integer()),
-    })
+    }),
   ),
 });
 
@@ -79,7 +79,7 @@ export const wordWithExamplesSchema = v.pipe(
     relations: v.array(relationSchema),
     examples: v.array(exampleSchema),
   }),
-  v.brand(word_brand)
+  v.brand(word_brand),
 );
 
 export type WordWithExamples = v.InferOutput<typeof wordWithExamplesSchema>;
@@ -96,7 +96,7 @@ export type ZpDICWordsResponse = v.InferOutput<typeof zpdicResponseSchema>;
 export const fetchZpdicWords = (
   apiKey: string,
   query: string,
-  dicID: string
+  dicID: string,
 ) => {
   const url = `https://zpdic.ziphil.com/api/v0/dictionary/${dicID}/words${query}`;
 
@@ -121,7 +121,7 @@ export const getTotalWords = (apiKey: string, dicID: string) => {
 export const fetchZpdicWord = (
   apiKey: string,
   index: number,
-  dicID: string
+  dicID: string,
 ) => {
   const res = fetchZpdicWords(apiKey, `?text=&skip=${index}&limit=1`, dicID);
 

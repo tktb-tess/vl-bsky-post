@@ -16,7 +16,7 @@ export const sessionSchema = v.object({
       v.literal('suspended'),
       v.literal('takendown'),
       v.literal('deactivated'),
-    ])
+    ]),
   ),
 });
 
@@ -46,7 +46,7 @@ export const createRecord = (
   accessJwt: string,
   content: string,
   link: string,
-  entry: string
+  entry: string,
 ) => {
   const endpoint = 'https://bsky.social/xrpc/com.atproto.repo.createRecord';
 

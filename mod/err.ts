@@ -5,12 +5,11 @@ interface NamedError<TName extends string> {
 }
 
 class NamedError<TName extends string> extends Error {
-  constructor(
-    public readonly errName: TName,
-    message: string,
-    options?: ErrorOptions
-  ) {
+  readonly errName: TName;
+
+  constructor(errName: TName, message: string, options?: ErrorOptions) {
     super(message, options);
+    this.errName = errName;
   }
 
   toJSON() {

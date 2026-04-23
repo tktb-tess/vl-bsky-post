@@ -3,7 +3,10 @@ import * as v from '@valibot/valibot';
 import { WordWithExamples } from './zpdic-api.ts';
 import { NamedError } from './err.ts';
 
-export const createErrHandler = <T extends string>(errName: T, fallback: string) => {
+export const createErrHandler = <T extends string>(
+  errName: T,
+  fallback: string,
+) => {
   return (e: unknown) => {
     const msg = e instanceof Error ? e.message : fallback;
     return new NamedError(errName, msg, { cause: e });
