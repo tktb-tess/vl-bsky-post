@@ -115,7 +115,7 @@ export const fetchZpdicWords = (
 export const getTotalWords = (apiKey: string, dicID: string) => {
   const result = fetchZpdicWords(apiKey, '?text=', dicID);
 
-  return result.map(({ total }) => total);
+  return result.map((w) => w.total);
 };
 
 export const fetchZpdicWord = (
