@@ -12,43 +12,37 @@ import {
 import { NamedError } from './mod/err.ts';
 import * as v from '@valibot/valibot';
 
-const password = Deno.env.get('BSKY_PASSWORD');
-const zpdicApiKey = Deno.env.get('ZPDIC_API_KEY');
 const runtime = Deno.env.get('RUNTIME');
 
-if (!password) {
-  const err = new NamedError(
-    'EnvVariableError',
-    `Couldn't get env 'BSKY_PASSWORD'`,
-  );
-  console.error(err);
-  Deno.exit(1);
-}
-
-if (!zpdicApiKey) {
-  const err = new NamedError(
-    'EnvVariableError',
-    `Couldn't get env 'ZPDIC_API_KEY'`,
-  );
-  console.error(err);
-  Deno.exit(1);
-}
-
-if (!runtime) {
-  const err = new NamedError('EnvVariableError', `Couldn't get env 'RUNTIME'`);
-  console.error(err);
-  Deno.exit(1);
-}
-
-if (runtime !== 'local' && runtime !== 'deno-deploy') {
-  const err = new NamedError('EnvVariableError', `env 'RUNTIME' is invalid`);
-  console.error(err);
-  Deno.exit(1);
-}
-
-const main = async () => {
+async function main() {
   const identifier = 'vaessenzlaendiskj.bsky.social';
   const dicID = '633';
+  const password = Deno.env.get('BSKY_PASSWORD');
+  const zpdicApiKey = Deno.env.get('ZPDIC_API_KEY');
+
+  if (!password) {
+    const err = new NamedError(
+      'EnvVariableError',
+      `Couldn't get env 'BSKY_PASSWORD'`,
+    );
+    console.error(err);
+    Deno.exit(1);
+  }
+
+  if (!zpdicApiKey) {
+    const err = new NamedError(
+      'EnvVariableError',
+      `Couldn't get env 'ZPDIC_API_KEY'`,
+    );
+    console.error(err);
+    Deno.exit(1);
+  }
+
+  if (runtime !== 'local' && runtime !== 'deno-deploy') {
+    const err = new NamedError('EnvVariableError', `env 'RUNTIME' is invalid`);
+    console.error(err);
+    Deno.exit(1);
+  }
 
   const formatResult = await getTotalWords(zpdicApiKey, dicID)
     .andThen((total) => {
@@ -109,15 +103,21 @@ const main = async () => {
       return;
     }
   }
-};
+}
+
+if (runtime !== 'local' && runtime !== 'deno-deploy') {
+  const err = new NamedError('EnvVariableError', `env 'RUNTIME' is invalid`);
+  console.error(err);
+  Deno.exit(1);
+}
 
 if (runtime === 'local') {
   await main();
 }
 
-if (runtime === 'deno-deploy') {
-  Deno.cron('Post to Bluesky', '0 * * * *', () => main());
-}
+// if (runtime === 'deno-deploy') {
+//   Deno.cron('Post to Bluesky', '0 * * * *', () => main());
+// }
 
 export default {
   async fetch() {
